@@ -70,7 +70,7 @@
                 <div class="col col-14">Status</div>
                 <div class="col col-13">Options</div>
             </li>
-
+            
            @foreach (var person in ViewBag.Record)
             {
                 string backgroundColor = person.Status == "INCOMPLETE" ? "#FBE8EB" : "#F2FCE9";
