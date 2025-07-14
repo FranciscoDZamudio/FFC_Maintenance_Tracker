@@ -1,0 +1,258 @@
+﻿
+@{
+    ViewBag.Title = "Review";
+}
+
+<style>
+    .celda-revisada-NG {
+        background-color: #F6C2C2;
+        border: 2px solid #28a745;
+    }
+
+    .celda-revisada {
+        background-color: #C2F6C7;
+        border: 2px solid #28a745;
+    }
+
+    .celda-no-revisada {
+        background-color: #D8D2D2;
+        border: 2px solid #dc3545;
+    }
+
+
+    .tstle {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    #clock {
+        font-size: 20px;
+        color: #555;
+        margin-top: 5px;
+    }
+</style>
+
+<!-- jQuery y table2excel desde CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/table2excel@1.1.1/dist/table2excel.min.js"></script>
+
+<link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
+
+<input type="text" id="modeloInterno" placeholder="Modelo Interno" class="form-control" value="@ViewBag.internalmodel" readonly =" @true" hidden="hidden" style="display: none;"/>
+<input type="text" id="pcba" placeholder="PCBA" class="form-control" value="@ViewBag.pcba" readonly =" @true" hidden="hidden" style="display: none;"/>
+<input type="text" id="operadorFCT" placeholder="Operador FCT" class="form-control" value="@ViewBag.operadorFCT" readonly =" @true" hidden="hidden" style="display: none;"/>
+
+<div style="text-align:center">
+    <h2 class="ttle">FFC Cable Inspection and Control | Review Report</h2>
+</div>
+<hr />
+
+<h4 class="Tittlelabel" style="text-align:center"> Review of Report Completed | @ViewBag.id</h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    View and select one option | Export information to xls and PDF Report
+</p>
+<br />
+
+<div style="text-align: center; margin-top: 20px;">
+    <button id="Bton_Export" class="btn btn-primary" style="text-align: center; background-color: #649092">
+        Exportar a excel <i class="fa fa-file-text"></i>
+    </button>
+    <a id="btnPdf" class="btn btn-primary" style="background-color: #649092">
+        Download Report PDF
+    </a>
+</div>
+
+<br />
+
+<div class="table-scroll">
+
+    <ul class="responsive-table">
+
+        <li class="table-header" id="tableData">
+            <div class="col col-14">Time</div>
+            <div class="col col-14">Status #1</div>
+            <div class="col col-14">Who Review #1</div>
+            <div class="col col-14">Date #1</div>
+            <div class="col col-14">Status #2</div>
+            <div class="col col-14">Who Review #2</div>
+            <div class="col col-14">Date #2</div>
+            <div class="col col-14">Status #3</div>
+            <div class="col col-14">Who Review #3</div>
+            <div class="col col-14">Date #3</div>
+        </li>
+
+        @foreach (var person in ViewBag.Record)
+        {
+            <li class="table-row" id="tblCustomers" style="background-color: #F2F1F1">
+                <div class="col col-14" data-label="Time">@person.time</div>
+                <hr style="border: none; border-top: 2px solid #CECECE; " />
+                <div class="col col-14" data-label="Setp1_One">@person.Setp1_One</div>
+                <div class="col col-14" data-label="Who Review #1">@person.UserReview1</div>
+                <div class="col col-14" data-label="Date #1">@person.DateReview1</div>
+                <hr style="border: none; border-top: 2px solid #CECECE; " />
+                <div class="col col-14" data-label="Setp2_Two">@person.Setp2_Two</div>
+                <div class="col col-14" data-label="Who Review #2">@person.UserReview2</div>
+                <div class="col col-14" data-label="Date #2">@person.DateReview2</div>
+                <hr style="border: none; border-top: 2px solid #CECECE; " />
+                <div class="col col-14" data-label="Setp3_Trh">@person.Setp3_Trh</div>
+                <div class="col col-14" data-label="Who Review #3">@person.UserReview3</div>
+                <div class="col col-14" data-label="Date #3">@person.DateReview3</div>
+
+            </li>
+        }
+
+    </ul>
+
+</div>
+
+<table id="myTable" class="table2excel table table-striped table-responsive-xl table-hover" hidden="hidden">
+    <thead>
+        <tr>
+            <th style="text-align:center">Time</th>
+            <th style="text-align:center">Status #1</th>
+            <th style="text-align:center">Who Review #1</th>
+            <th style="text-align:center">Date #1</th>
+            <th style="text-align:center">Status #2</th>
+            <th style="text-align:center">Who Review #2</th>
+            <th style="text-align:center">Date #2</th>
+            <th style="text-align:center">Status #3</th>
+            <th style="text-align:center">Who Review #3</th>
+            <th style="text-align:center">Date #3</th>
+        </tr>
+    </thead>
+    <tbody id="Table01">
+        @foreach (var person in ViewBag.Record)
+        {
+            <tr>
+                <td>@person.time</td>
+                <td>@person.Setp1_One</td>
+                <td>@person.UserReview1</td>
+                <td>@person.DateReview1</td>
+                <td>@person.Setp2_Two</td>
+                <td>@person.UserReview2</td>
+                <td>@person.DateReview2</td>
+                <td>@person.Setp3_Trh</td>
+                <td>@person.UserReview3</td>
+                <td>@person.DateReview3</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<img id="logoHisense" src="~/Pictures/hisense logo.png" style="display:none;">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    document.getElementById("btnPdf").addEventListener("click", function () {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const img = document.getElementById("logoHisense");
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        ctx.drawImage(img, 0, 0);
+        const imageData = canvas.toDataURL("image/png");
+
+        // ✅ LOGO a la izquierda
+        doc.addImage(imageData, 'PNG', 10, 10, 40, 8); // x, y, width, height
+
+        // ✅ TÍTULO centrado (ajustado más abajo para no chocar con el logo)
+        doc.setFontSize(17);
+        doc.setFont('helvetica', 'bold');
+        doc.text('REVISION DE CABLES FFC', 70, 16);
+
+        // ✅ MODELO INTERNO y PCBA en línea, más abajo aún
+        doc.setFontSize(10);
+        doc.text('MODELO INTERNO:', 10, 26);
+        doc.text(document.getElementById("modeloInterno")?.value || '_________', 50, 26);
+
+        doc.text('PCBA:', 120, 26);
+        doc.text(document.getElementById("pcba")?.value || '_________', 135, 26);
+
+        // ✅ Construcción de tabla
+        const rows = [];
+        const table = document.getElementById("Table01");
+        for (let i = 0; i < table.rows.length; i++) {
+            const cells = table.rows[i].cells;
+            rows.push([
+                cells[0].innerText,
+                cells[1].innerText,
+                cells[2].innerText,
+                cells[3].innerText,
+                cells[4].innerText,
+                cells[5].innerText,
+                cells[6].innerText,
+                cells[7].innerText,
+                cells[8].innerText,
+                cells[9].innerText
+            ]);
+        }
+
+        // ✅ Tabla con espacio inicial más bajo
+        doc.autoTable({
+            startY: 32,
+            head: [[
+                'Hora',
+                '1 (OK/NG)', 'Revisó', 'Fecha',
+                '2 (OK/NG)', 'Revisó', 'Fecha',
+                '3 (OK/NG)', 'Revisó', 'Fecha'
+            ]],
+            body: rows,
+            styles: {
+                fontSize: 6,
+                halign: 'center',
+                valign: 'middle',
+            },
+            headStyles: {
+                fillColor: [100, 144, 146]
+            },
+        });
+
+        const datenow = new Date().toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        let yFinal = doc.lastAutoTable.finalY + 10;
+        doc.text('OPERADOR FCT:', 20, yFinal);
+        doc.text(document.getElementById("operadorFCT")?.value || '____________________', 60, yFinal);
+
+        doc.save("Revision_FFC" + datenow + ".pdf");
+    });
+</script>
+
+
+<script>
+    $(document).ready(function () {
+        $("#Bton_Export").click(function () {
+            var datenow = new Date().toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            // Mostrar temporalmente la tabla si está oculta
+            $("#myTable").removeAttr("hidden");
+
+            $("#myTable").table2excel({
+                name: "Backup file for HTML content",
+                filename: "Reporte de revision " + datenow + ".xls",
+                preserveColors: false
+            });
+
+            // Volver a ocultarla
+            $("#myTable").attr("hidden", "hidden");
+        });
+    });
+</script>

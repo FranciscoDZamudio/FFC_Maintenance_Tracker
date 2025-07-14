@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="~/Pictures/logo.ico" />
+    <title>@ViewBag.Title | FFC Cable Maintenance</title>
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+</head>
+<body>
+    <link href="~/Stylees/MainStylee.css" rel="stylesheet" />
+
+    @{
+        var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+        var action = ViewContext.RouteData.Values["action"]?.ToString();
+        var showTopBar = !(controller == "Login" && action == "LogIn");
+    }
+
+    @if (showTopBar)
+    {
+        <div id="sidebar" class="sidebar">
+            <div class="sidebar-header" style="text-align: center; padding: 15px;">
+
+                <br />
+                <img src="~/Pictures/hisense logo.png" class="logo-img" alt="Logo" />
+
+                <p class="description" style="font-size: 13px; font-weight: 700; margin-top: 10px; color: #0A322F;">
+                    Usuario Activo: <span style="color: #145A56;"><br /> @Session["Type"].ToString() </span>
+                </p>
+
+                <a href="javascript:void(0)" class="closebtn" onclick="closeMenu()" style="position: absolute; top: 1px;
+                         right: 1px; font-size: 18px; color:black">&times;</a>
+
+            </div>
+
+            <hr class="hr-divider" />
+            <p class="sidebar-section-title" style="color: #0A322F"> Permissions </p>
+            <hr class="hr-divider" />
+
+            @if (Session["Type"].ToString() == "Administrator")
+            {
+                @Html.ActionLink("⚪ New Users", "Users", "Home")
+                @Html.ActionLink("⚪ Create report", "GenReport", "Home")
+                @Html.ActionLink("⚪ View report", "History", "Home")
+
+            }
+            else
+            {
+                @*@Html.ActionLink("⚪ New Users", "Users", "Home")*@
+                @Html.ActionLink("⚪ Create report", "GenReport", "Home")
+                @Html.ActionLink("⚪ View report", "History", "Home")
+                @*@Html.ActionLink("⚪ Settings", "Records", "Equipament")*@
+            }
+
+            <!-- Logout Link Always at the Bottom -->
+            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center;">
+                @Html.ActionLink(
+            "⛔ Log out",
+            "LogIn",
+            "Login",
+            null,
+            new { @class = "logout-link" }
+            )
+
+            </div>
+
+        </div>
+
+        <div class="topbar">
+            <span class="menu-icon" onclick="openMenu()" style="background-color: white">&#9776;</span>
+            <span style="font-size: 13px; color: #147C75"> 🔸 Welcome ! @Session["Username"].ToString() ! </span>
+        </div>
+
+        <div id="main-content" class="main-content">
+            @RenderBody()
+        </div>
+    }
+    else
+    {
+        @RenderBody()
+    }
+
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @Scripts.Render("~/bundles/table2excel")
+    @RenderSection("scripts", required: false)
+</body>
+
+</html>
+
+<script>
+    function openMenu() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.style.width = "180px";
+    }
+
+    function closeMenu() {
+        const sidebar = document.getElementById("sidebar");
+        sidebar.style.width = "0";
+    }
+</script>

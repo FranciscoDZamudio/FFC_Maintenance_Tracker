@@ -1,0 +1,309 @@
+﻿
+@{
+    ViewBag.Title = "New User";
+}
+
+<link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
+<style>
+    .employee-photo {
+        width: 110px; /* Ajusta el tamaño según sea necesario */
+        height: 110px;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+        margin: 0 auto;
+        border: 2px solid #ddd; /* Opcional: agrega un borde */
+    }
+</style>
+
+
+<div style="text-align:center">
+    <h2 class="ttle"> Main control panel for generating new user access</h2>
+</div>
+<hr />
+
+<h4 class="Tittlelabel" style="text-align:center">User Access Registration</h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">Please complete the following fields to create a new user access</p>
+
+@using (Html.BeginForm("Users", "Home", FormMethod.Post, new { id = "myForm" }))
+{
+    <p style="text-align: center;">&nbsp;</p>
+    <h5 style="text-align: center; color: #5264AE; font-weight: 700">Type:</h5>
+    <div class="group">
+        <select name="TypeUsers" id="TypeUsers" class="form-control" style="max-width:100%; color:black">
+            <option value="Administrator">Administrator</option>
+            <option value="Users">Users</option>
+        </select>
+    </div>
+
+    <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
+    <div class="center-wrapper">
+        <select name="Shift" id="Shift" class="form-control" style="max-width:100%; color:black">
+            <option value="">Select Shift:</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+        </select>
+    </div>
+
+    <br /><br />
+
+    <div class="group">
+        <input type="number" id="Credentials" name="Credentials" required>
+        <span class="highlight"></span>
+        <span class="bar"></span>
+        <label>Employee Number:</label>
+    </div>
+
+    <div class="form-and-card-container">
+        <!-- Tarjeta Usuario -->
+        <div id="employee-card" class="card-user" style="display: none;">
+            <h4 class="card-title">USUARIO</h4>
+            <img id="card-photo" src="@Url.Content("~/Images/default-user.png")" class="employee-photo" alt="Foto del empleado">
+            <p id="card-name">Nombre completo</p>
+            <p id="card-area">Área: ---</p>
+            <p id="card-department">Departamento: ---</p>
+        </div>
+
+        <!-- Formulario -->
+        <div class="form-wrapper" style="display: none;">
+            <div class="group">
+                <input type="text" name="Example">
+                <span class="highlight"></span>
+                <span class="bar"></span>
+                <label>Ejemplo de campo</label>
+            </div>
+        </div>
+    </div>
+
+    <br />
+    <br />
+
+    <!-- Contenedor que se oculta/visualiza dinámicamente -->
+    <div id="lineStationContainer">
+        <div class="group">
+            <input type="number" id="Line" name="Line">
+            <span class="highlight"></span>
+            <span class="bar"></span>
+            <label>Enter the line number:</label>
+        </div>
+
+        <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
+        <div class="group">
+            <select name="Station" id="Station" class="form-control" style="max-width:100%; color:black">
+                <option value="">Select a station</option>
+            </select>
+        </div>
+    </div>
+
+    <script>
+        const stationSelect = document.getElementById('Station');
+        const lineInput = document.getElementById('Line');
+        const typeSelect = document.getElementById('TypeUsers');
+        const lineStationContainer = document.getElementById('lineStationContainer');
+
+        const stationsByLine = {
+            1: [101, 102, 103, 104, 105, 106],
+            2: [201, 202, 203, 204, 205, 206],
+            3: [301, 302, 303, 304, 305, 306],
+            4: [401, 402, 403, 404, 405, 406, 407, 408, 409],
+            5: [501, 502, 503, 504, 505, 506, 507, 508, 509],
+            6: [601, 602, 603, 604, 605, 606, 607, 608, 609]
+        };
+
+        // Mostrar u ocultar Line y Station según el tipo seleccionado
+        typeSelect.addEventListener('change', function () {
+            if (this.value === "Administrator") {
+                lineStationContainer.style.display = "none";
+                // limpiar valores
+                lineInput.value = "";
+                stationSelect.innerHTML = '<option value="">Select a station</option>';
+            } else {
+                lineStationContainer.style.display = "block";
+            }
+        });
+
+        // Inicializar oculto si el valor inicial es "Administrator"
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeSelect.value === "Administrator") {
+                lineStationContainer.style.display = "none";
+            }
+        });
+
+        // Manejo de estaciones según línea
+        lineInput.addEventListener('change', function () {
+            const line = parseInt(this.value);
+            const stations = stationsByLine[line];
+            stationSelect.innerHTML = '<option value="">Select a station</option>';
+
+            if (stations) {
+                stations.forEach(station => {
+                    const option = document.createElement('option');
+                    option.value = station;
+                    option.textContent = station;
+                    stationSelect.appendChild(option);
+                });
+            } else if (typeSelect.value !== "Administrator") {
+                alert("❌ Línea inválida. Por favor ingresa un número del 1 al 6.");
+            }
+        });
+    </script>
+
+    <br />
+    <div class="group">
+        <input type="password" id="Pass" name="Pass" required>
+        <span class="highlight"></span>
+        <span class="bar"></span>
+        <label>Enter your password:</label>
+    </div>
+
+    <p style="text-align: center; color: red; font-family: Trebuchet MS, sans-serif; font-size: 15px"> @ViewBag.message </p>
+
+    <div style="text-align:center">
+        <button type="submit" class="btn-save" style="text-align:center">Save</button>
+    </div>
+
+}
+
+<p style="text-align: center;">&nbsp;</p>
+<p style="text-align: center;">&nbsp;</p>
+
+
+<h4 class="Tittlelabel" style="text-align:center">
+    Recently Registered Users | Total: <span id="count">@ViewBag.count</span>
+</h4>
+
+<div class="table-scroll">
+    <ul class="responsive-table">
+        <li class="table-header" id="tableData">
+            <div class="col col-1">Username</div>
+            <div class="col col-2">HMX</div>
+            <div class="col col-3">Type</div>
+            <div class="col col-3">Line</div>
+            <div class="col col-3">EstacionAssig</div>
+            <div class="col col-4">Departament</div>
+            <div class="col col-5">Area</div>
+            <div class="col col-6">Date</div>
+            <div class="col col-7">Options</div>
+        </li>
+        @foreach (var person in ViewBag.Record)
+        {
+            <li class="table-row" id="tblCustomers">
+
+                <div class="col col-1" data-label="Username"> @person.Username</div>
+
+                <div class="col col-2" data-label="HMX">@person.HMX</div>
+
+                <div class="col col-3" data-label="Type"> @person.Type</div>
+
+                <div class="col col-3" data-label="Type"> @person.Line</div>
+
+                <div class="col col-3" data-label="Type"> @person.Estacion</div>
+
+                <div class="col col-4" data-label="Departament"> @person.Departament</div>
+
+                <div class="col col-5" data-label="Area">@person.Area</div>
+
+                <div class="col col-6" data-label="DatetimeAdded">@person.DatetimeAdded</div>
+
+                <div class="col col-7" data-label="Options" style="text-align:center">
+
+                    <a href="#" class="delete-user" data-id="@person.HMX">❌ Delete</a>
+
+                </div>
+
+            </li>
+        }
+    </ul>
+</div>
+
+<p style="text-align: center;">&nbsp;</p>
+<p style="text-align: center;">&nbsp;</p>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".delete-user").on("click", function (e) {
+            e.preventDefault();
+
+            const userId = $(this).data("id");
+            const row = $(this).closest(".table-row");
+
+            if (!userId) {
+                alert("Invalid user ID.");
+                return;
+            }
+
+            if (confirm("Are you sure you want to delete this user?")) {
+                $.ajax({
+                    url: '@Url.Action("DeleteProcess", "Home")',
+                    type: 'POST',
+                    data: { ID: userId },
+                    success: function (response) {
+                        if (response.success) {
+                            // Quitar la fila visualmente
+                            row.fadeOut(300, function () {
+                                $(this).remove();
+
+                                // Actualizar el contador si está disponible
+                                if (typeof response.userCount !== "undefined") {
+                                    $("#count").text(response.userCount);
+                                }
+
+                                alert("User successfully deleted!");
+                            });
+                        } else if (response.redirectUrl) {
+                            window.location.href = response.redirectUrl;
+                        } else {
+                            alert("An error occurred while deleting the user.");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Delete error:", status, error);
+                        alert("An error occurred while trying to delete the user.");
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+<script>
+    document.getElementById('Credentials').addEventListener('blur', function () {
+        const empNumber = this.value.trim();
+        const card = document.getElementById('employee-card');
+
+        if (!empNumber) {
+            card.style.display = 'none';
+            return;
+        }
+
+        const url = '@Url.Action("GetEmployeeInfo", "Home")' + '?employeeId=' + encodeURIComponent(empNumber);
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error("Error en la respuesta");
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.employee) {
+                    // Asignar datos al card
+                    document.getElementById('card-photo').src = data.employee.photoUrl;
+                    document.getElementById('card-name').textContent = data.employee.fullName;
+                    document.getElementById('card-area').textContent = "Área: " + data.employee.area;
+                    document.getElementById('card-department').textContent = "Departamento: " + data.employee.department;
+
+                    card.style.display = 'block';
+                } else {
+                    alert("Empleado no encontrado.");
+                    card.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error al consultar el empleado.");
+                card.style.display = 'none';
+            });
+    });
+</script>
+

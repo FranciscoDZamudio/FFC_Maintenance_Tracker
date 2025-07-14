@@ -1,0 +1,154 @@
+﻿
+@{
+    ViewBag.Title = "History";
+}
+
+<link href="~/Stylees/HistoryStylee.css" rel="stylesheet" />
+<input value="@ViewBag.Type" readonly="@true" hidden="hidden" id="id" name="id" />
+<div style="text-align:center">
+    <h2 class="ttle"> History of reports created in the system | FCC Cable Maintenance </h2>
+</div>
+<hr />
+
+<h4 class="Tittlelabel" style="text-align:center"> FFC Maintenance Reports </h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    Enter the date range you want to consult for the report
+</p>
+<br />
+
+@using (Html.BeginForm("Historys", "Home", FormMethod.Get))
+{
+    <div class="container" style="text-align: center; width: 100%; height: 100%">
+
+        <div style="text-align: center; min-width: 100%; ">
+
+            <div class="form-row">
+
+                <div class="form-group col-md-6 text-center">
+                    <p for="TimeStart" style="font-family: 'Century Gothic'; display: block">Fecha Inicial:</p>
+                    <input id="DateInitial" name="DateInitial" type="date" class="form-control mx-auto" style="max-width: 100%; display: block;" />
+                </div>
+
+                <div class="form-group col-md-6 text-center">
+                    <p for="Timeend" style="font-family: 'Century Gothic'; display: block">Fecha Final:</p>
+                    <input id="DateFinal" name="DateFinal" type="date" class="form-control mx-auto" style="max-width: 100%; display: block;" />
+                </div>
+
+                <p style="text-align: center;">&nbsp;</p>
+
+                <div class="center-wrapper">
+                    <button type="submit" class="btn-save">
+                        View Query
+                    </button>
+                </div>
+
+                
+                <p style="text-align: center;">&nbsp;</p>
+
+            </div>
+
+        </div>
+    </div>
+
+}
+
+    <h4 class="Tittlelabel" style="text-align:center">
+        Recently Created Reports | Total: <span id="count">@ViewBag.count</span>
+    </h4>
+
+    <div class="table-scroll">
+        <ul class="responsive-table">
+            <li class="table-header" id="tableData">
+                <div class="col col-10">Folio</div>
+                <div class="col col-11">Who Create</div>
+                <div class="col col-12">Line</div>
+                <div class="col col-12">Station</div>
+
+                <div class="col col-13">Placa Main</div>
+                <div class="col col-14">Internal Model</div>
+                <div class="col col-14">Date</div>
+                <div class="col col-14">Status</div>
+                <div class="col col-13">Options</div>
+            </li>
+
+           @foreach (var person in ViewBag.Record)
+            {
+                string backgroundColor = person.Status == "INCOMPLETE" ? "#FBE8EB" : "#F2FCE9";
+
+                <li class="table-row" id="tblCustomers" style="background-color:@backgroundColor">
+                    <div class="col col-10" data-label="Folio">@person.folio</div>
+                    <div class="col col-11" data-label="Who Create">@person.WhoCreate</div>
+                    <div class="col col-12" data-label="Line">@person.line</div>
+                    <div class="col col-12" data-label="Station">@person.Estacion</div>
+
+                    <div class="col col-13" data-label="Placa Main">@person.PlacaMain</div>
+                    <div class="col col-14" data-label="Internal Model">@person.InternalModel</div>
+                    <div class="col col-14" data-label="Date">@person.Date</div>
+                    <div class="col col-14" data-label="Status">@person.Status</div>
+
+                    <div class="col col-13" data-label="Options" style="text-align:center">
+
+                       @if (ViewBag.Type == "Administrator")
+                        {
+                            <text>
+                                <a href="#" class="delete-user" data-id="@person.folio">🚫 Delete</a> /
+                                @Html.ActionLink("💾 Review", "Review", new { id = person.folio }) /
+                            </text>
+                        }
+
+                        @Html.ActionLink("👁️ View report", "Report", new { id = person.folio })
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+
+<p style="text-align: center;">&nbsp;</p>
+<p style="text-align: center;">&nbsp;</p>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $(".delete-user").on("click", function (e) {
+            e.preventDefault();
+
+            const userId = $(this).data("id");
+            const row = $(this).closest(".table-row");
+
+            if (!userId) {
+                alert("Invalid user ID.");
+                return;
+            }
+
+            $.ajax({
+                    url: '@Url.Action("RemoveFolio", "Home")',
+                    type: 'POST',
+                    data: { ID: userId },
+                    success: function (response) {
+                        if (response.success) {
+                            // Quitar la fila visualmente
+                            row.fadeOut(300, function () {
+                                $(this).remove();
+
+                                // Actualizar el contador si está disponible
+                                if (typeof response.userCount !== "undefined") {
+                                    $("#count").text(response.userCount);
+                                }
+
+                                alert("Report successfully deleted!");
+                            });
+                        } else if (response.redirectUrl) {
+                            window.location.href = response.redirectUrl;
+                        } else {
+                            alert("An error occurred while deleting the user.");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Delete error:", status, error);
+                        alert("An error occurred while trying to delete the user.");
+                    }
+                });
+        });
+    });
+</script>

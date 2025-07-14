@@ -1,0 +1,56 @@
+﻿
+@{
+    ViewBag.Title = "Log In";
+}
+
+<link href="~/Stylees/LoginStylee.css" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+
+<style>
+
+    .Tittle {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .highlight-title {
+        background-color: rgba(0, 0, 0, 0.6); /* negro semitransparente */
+        color: white;
+        display: inline-block;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: normal;
+    }
+
+    .message {
+        font-size: 14px;
+        color: darkred;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-header">
+        <h5 class="highlight-title"> FFC Cable Maintenance Management System </h5>
+    </div>
+    <div class="login-form">
+
+        @using (Html.BeginForm("LogIn", "Login", FormMethod.Post))
+        {
+            <p class="Tittle"> Sign in with your credentials to continue: </p>
+            <br />
+
+            <label for="username">HMX:</label>
+            <input type="text" id="HMX" name="HMX" placeholder="Enter you HMX (Credendials)" required=required />
+
+            <label for="username">Password:</label>
+            <input type="password" id="Password" name="Password" placeholder="Password" required=required />
+
+            <p class="message"> @ViewBag.message </p>
+            <br />
+
+            <button type="submit" class="btn-login"> Log In </button>
+        }
+
+    </div>
+</div>

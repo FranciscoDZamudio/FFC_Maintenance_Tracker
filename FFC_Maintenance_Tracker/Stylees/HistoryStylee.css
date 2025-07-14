@@ -1,0 +1,269 @@
+﻿body {
+}
+
+.ttle {
+    color: #014F55;
+    font-family: Trebuchet MS, sans-serif;
+    font-weight: 500;
+}
+
+
+.Tittlelabel {
+    color: #083734;
+}
+
+.btn-save {
+    background-color: #012F33; /* azul oscuro */
+    color: white;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-weight: bold;
+    width: 35vh;
+}
+
+    .btn-save:hover {
+        background-color: #02464b; /* tono más claro al hacer hover */
+        transform: scale(1.05);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+.responsive-table {
+    li
+
+{
+    border-radius: 1px;
+    padding: 10px 5px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.table-header {
+    background-color: #144743;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: white;
+    border-radius: 8px;
+}
+
+.table-row {
+    background-color: #ffffff;
+    font-size: 12px;
+    box-shadow: 0px 0px 9px 0px rgba(0,0,0,0.1);
+}
+    /* Agregado para filas alternadas */
+    .table-row:nth-child(even) {
+        background-color: white;
+    }
+
+    .table-row:nth-child(odd) {
+        background-color: floralwhite;
+    }
+
+.col-1 {
+    flex-basis: 25%;
+    text-align: center;
+}
+
+.col-2 {
+    flex-basis: 15%;
+    text-align: center;
+}
+
+.col-3 {
+    flex-basis: 10%;
+    text-align: center;
+}
+
+.col-4 {
+    flex-basis: 15%;
+    text-align: center;
+}
+
+.col-5 {
+    flex-basis: 15%;
+    text-align: center;
+}
+
+.col-6 {
+    flex-basis: 15%;
+    text-align: center;
+}
+
+.col-7 {
+    flex-basis: 20%;
+    text-align: center;
+}
+
+.col-10 {
+    flex-basis: 20%;
+    text-align: center;
+}
+
+.col-11 {
+    flex-basis: 25%;
+    text-align: center;
+}
+
+.col-12 {
+    flex-basis: 10%;
+    text-align: center;
+}
+
+.col-13 {
+    flex-basis: 25%;
+    text-align: center;
+}
+
+.col-14 {
+    flex-basis: 20%;
+    text-align: center;
+}
+
+.group {
+    position: relative;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: right;
+}
+
+.dateText {
+    position: relative;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: right;
+    font-size: 15px
+}
+
+input {
+    font-size: 13px;
+    padding: 10px 10px 10px 5px;
+    display: flex;
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-bottom: 0px solid white;
+    background-color: white;
+    overflow: hidden;
+    text-align: center;
+}
+
+    input:focus {
+        outline: none;
+    }
+
+        /* active state */
+        input:focus ~ label, input:valid ~ label {
+            top: -25px;
+            font-size: 14px;
+            color: #5264AE;
+        }
+
+
+/* LABEL ======================================= */
+label {
+    position: absolute;
+    margin-bottom: 3px;
+    display: flex;
+    flex-direction: column;
+    color: #2c3e50;
+    left: auto;
+    top: 25%;
+    transition: 0.2s ease all;
+    -moz-transition: 0.2s ease all;
+    -webkit-transition: 0.2s ease all;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+.form-control {
+    font-size: 14px;
+    max-width: 90vh;
+    padding: 10px 10px 10px 5px;
+    display: flex;
+    height: 100%;
+    border: none;
+    border-bottom: 0px solid #757575;
+    background-color: white;
+    overflow: hidden;
+    text-align: center;
+}
+
+
+@media all and (max-width: 767px) {
+    .table-header {
+        display: none;
+    }
+
+    .table-row {
+    }
+
+    li {
+        display: block;
+        width: auto;
+    }
+
+    .col {
+        flex-basis: 100%;
+    }
+
+    .col {
+        display: flex;
+        padding: 10px 0;
+        &:before
+
+{
+    color: #6C7A89;
+    padding-right: 10px;
+    content: attr(data-label);
+    flex-basis: 50%;
+    text-align: right;
+}
+
+}
+}
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+/* SOLO en tablets: aplica scroll horizontal */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .responsive-table {
+        min-width: 1500px; /* ajusta según tus columnas */
+    }
+}
+
+/* En otros tamaños NO hay scroll */
+@media (max-width: 767px), (min-width: 1025px) {
+    .table-scroll {
+        overflow-x: unset;
+    }
+
+    .responsive-table {
+        min-width: unset;
+        width: 100%;
+    }
+}

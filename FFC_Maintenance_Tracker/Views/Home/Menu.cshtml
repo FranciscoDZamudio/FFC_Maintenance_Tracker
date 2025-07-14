@@ -1,0 +1,71 @@
+﻿
+@{
+    ViewBag.Title = "FFC Cable Maintenance Management System";
+}
+
+<style>
+    #main-content {
+        position: relative;
+        overflow: hidden;
+        height: 80vh;
+    }
+
+    /* Animación y estilo del contenedor flotante */
+    .welcome-container {
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 300px;
+        padding: 10px;
+        z-index: 5; /* Para estar sobre el fondo pero debajo del menú si se superpone */
+    }
+
+    .welcome-logo {
+        width: 150px;
+        height: auto;
+    }
+
+    .welcome-title {
+        font-size: 15px;
+        text-align: center;
+        color: #0077cc;
+    }
+
+</style>
+
+<div class="welcome-container">
+    <img src="~/Pictures/hisense logo.png" alt="Hisense Logo" class="welcome-logo" />
+    <h1 class="welcome-title" style="font-size:13px">¡ Welcome FFC Cable Maintenance Management System !</h1>
+</div>
+
+<script>
+
+    const container = document.querySelector('.welcome-container');
+    const parent = document.getElementById('main-content');
+
+    let x = 100, y = 100;
+    let dx = 0.5 + Math.random(); // Velocidad más lenta
+    let dy = 0.5 + Math.random();
+
+    function animate() {
+        const parentRect = parent.getBoundingClientRect();
+        const rect = container.getBoundingClientRect();
+
+        if (x + rect.width >= parentRect.width || x <= 0) dx = -dx;
+        if (y + rect.height >= parentRect.height || y <= 0) dy = -dy;
+
+        x += dx;
+        y += dy;
+
+        container.style.left = x + 'px';
+        container.style.top = y + 'px';
+
+        requestAnimationFrame(animate);
+    }
+
+    container.style.position = 'absolute';
+    animate();
+
+</script>

@@ -1,0 +1,148 @@
+﻿@{
+    ViewBag.Title = "Maintenance Report";
+}
+
+<link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
+
+<div style="text-align:center">
+    <h2 class="ttle"> Generate a New Maintenance Report </h2>
+</div>
+<hr />
+
+<h4 class="Tittlelabel" style="text-align:center"> FFC Maintenance Report </h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    Please fill out the following fields to create a new maintenance report.
+</p>
+
+@using (Html.BeginForm("GenReport", "Home", FormMethod.Post))
+{
+    <div class="container" style="text-align: center; width: 100%; height: 100%">
+        <div style="text-align: center; min-width: 100%; ">
+            <p style="text-align: center;">&nbsp;</p>
+
+            <h5 style="text-align: center; color: #5264AE; font-weight: 700">User's Full Name: </h5>
+            <div class="center-wrapper">
+                <input type="text" id="WhoCreate" name="WhoCreate" value="@ViewBag.username" readonly required>
+            </div>
+            <input value="@ViewBag.Line" id="lineSelected" name="lineSelected" type="hidden" />
+
+            <h5 style="text-align: center; color: #5264AE; font-weight: 700">Line: </h5>
+            <div class="center-wrapper">
+                <input type="text" id="Line" name="Line" required>
+            </div>
+
+            <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
+            <div class="center-wrapper">
+                <select name="Station" id="Station" class="form-control" style="max-width:100%; color:black">
+                    <option value="">Select a station</option>
+                </select>
+            </div>
+
+            <br />
+            <!--<h5>Escáner QR (Compatible con HTTP en Firefox/Edge móvil)</h5>
+    <div class="center-wrapper">-->
+            <!-- En tu vista Razor o archivo HTML -->
+            <!--<script src="https://unpkg.com/html5-qrcode"></script>
+
+        <div id="reader" style="width: 300px; margin:auto;"></div>
+        <input type="text" id="QR" placeholder="Resultado QR" style="margin-top:10px" />
+
+    </div>
+    <div class="center-wrapper">
+        <input type="text" id="QR" name="QR" placeholder="Resultado del QR" style="padding: 5px; " readonly />
+    </div>-->
+            <br />
+            <div class="group">
+                <input type="text" id="Placa" name="Placa" required>
+                <span class="highlight"></span>
+                <span class="bar"></span>
+                <label>Placa Main:</label>
+            </div>
+
+            <br />
+            <div class="group">
+                <input type="text" id="Internal" name="Internal" required>
+                <span class="highlight"></span>
+                <span class="bar"></span>
+                <label>Internal Model:</label>
+            </div>
+
+            <br>
+            <p style="text-align: center; color: red; font-family: Trebuchet MS, sans-serif; font-size: 15px"> @ViewBag.message </p>
+            <div class="center-wrapper">
+                <button type="submit" class="btn-save">
+                    Save
+                </button>
+            </div>
+        </div>
+        </div>
+}
+
+<hr />
+<!--<div class="center-wrapper">-->
+    <!-- Botón para iniciar escaneo -->
+    <!--<button type="button" id="btnStartScanner">📷 Escanear</button>
+</div>-->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // Dinámica para estaciones por línea
+        const stationSelect = document.getElementById('Station');
+        const lineInput = document.getElementById('Line');
+
+        const stationsByLine = {
+            1: [101, 102, 103, 104, 105, 106],
+            2: [201, 202, 203, 204, 205, 206],
+            3: [301, 302, 303, 304, 305, 306],
+            4: [401, 402, 403, 404, 405, 406, 407, 408, 409],
+            5: [501, 502, 503, 504, 505, 506, 507, 508, 509],
+            6: [601, 602, 603, 604, 605, 606, 607, 608, 609]
+        };
+
+        lineInput.addEventListener('change', () => {
+            const line = parseInt(lineInput.value);
+            const stations = stationsByLine[line];
+
+            stationSelect.innerHTML = '<option value="">Select a station</option>';
+
+            if (stations) {
+                stations.forEach(station => {
+                    const option = document.createElement('option');
+                    option.value = station;
+                    option.textContent = station;
+                    stationSelect.appendChild(option);
+                });
+            } else {
+                alert("❌ Línea inválida. Por favor ingresa un número del 1 al 6.");
+            }
+        });
+    </script>
+
+    <!-- qr-scanner librería -->
+    <!--<script>
+        const qrInput = document.getElementById("QR");
+
+        const html5Qr = new Html5Qrcode("reader");
+
+        Html5Qrcode.getCameras().then(cameras => {
+            if (cameras && cameras.length > 0) {
+                const camId = cameras[0].id;
+
+                html5Qr.start(
+                    camId,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
+                    qrText => {
+                        qrInput.value = qrText;
+                        html5Qr.stop();
+                    },
+                    error => {
+                        // console.warn("QR scan error", error);
+                    }
+                );
+            } else {
+                alert("No se encontró cámara.");
+            }
+        }).catch(err => {
+            alert("Error al acceder a la cámara: " + err);
+        });
+    </script>-->

@@ -1,0 +1,118 @@
+﻿body, h1, h2, h3, h4, h5, h6, a, span, div, li, td, th, input, button {
+    font-family: 'Quicksand', sans-serif;
+}
+
+.sidebar-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    margin: 4px 0;
+    color: #062527;
+}
+
+.hr-divider {
+    border: none;
+    height: 1px;
+    background-color: #B6B8BB;
+    margin: 8px 0;
+}
+
+.sidebar {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    background-color: #E1DADA;
+    overflow-x: hidden;
+    transition: 0.3s;
+    padding-top: 0;
+    color: black;
+}
+
+.sidebar-header {
+    background-color: #E1DADA;
+    padding: 20px 15px 10px;
+    text-align: center;
+    position: relative;
+}
+
+    .sidebar-header h2 {
+        margin: 0;
+        font-size: 15px;
+    }
+
+    .sidebar-header .description {
+        font-size: 12px;
+        color: black;
+    }
+
+.sidebar .closebtn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    color: black;
+    text-decoration: none;
+}
+
+.sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 12px;
+    color: #0A322F;
+    display: block;
+}
+
+    .sidebar a:hover {
+        background-color: #6A7070;
+        color: white;
+    }
+
+.topbar {
+    background-color: white;
+    color: black;
+    padding: 11px 11px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    z-index: 999;
+}
+
+.menu-icon {
+    cursor: pointer;
+    margin-right: 15px;
+    font-size: 15px;
+}
+
+.main-content {
+    padding: 20px;
+    transition: margin-left 0.3s;
+}
+
+.logo-img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    display: block;
+    margin: 0 auto 10px auto;
+}
+
+.logout-link {
+    display: block;
+    /*background-color: #E54130;*/ /* rojo */
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+    width: 80%;
+    margin: 0 auto; /* centra horizontalmente */
+}
+

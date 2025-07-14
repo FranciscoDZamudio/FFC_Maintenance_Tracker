@@ -1,0 +1,357 @@
+﻿
+@{
+    ViewBag.Title = "Report";
+
+    var horas = new[] {
+       "6_30AM", "7_30AM", "8_30AM", "9_30AM", "10_30AM", "11_30AM", "12_30PM",
+        "1_30PM", "2_30PM", "3_30PM", "4_30PM", "5_30PM", "6_30PM","7_30PM","8_30PM",
+        "9_30PM","10_30PM","11_30PM","12_30AM","1_30AM","2_30AM","3_30AM","4_30AM","5_30AM"
+    };
+
+    var displayHoras = new[] {
+       "6:30 AM", "7:30 AM", "8:30 AM", "9:30 AM", "10:30 AM", "11:30 AM", "12:30 PM",
+        "1:30 PM", "2:30 PM", "3:30 PM", "4:30 PM", "5:30 PM", "6:30 PM","7:30 PM","8:30 PM",
+        "9:30 PM","10:30 PM","11:30 PM","12:30 AM","1:30 AM","2:30 AM","3:30 AM","4:30 AM","5:30 AM"
+    };
+
+    var resultados = ViewBag.ResultadosRevision as Dictionary<string, Dictionary<int, string>>;
+}
+
+<style>
+    .celda-revisada-NG {
+        background-color: #F6C2C2;
+        border: 2px solid #28a745;
+    }
+
+    .celda-revisada {
+        background-color: #C2F6C7;
+        border: 2px solid #28a745;
+    }
+
+    .celda-no-revisada {
+        background-color: #D8D2D2;
+        border: 2px solid #dc3545;
+    }
+
+
+    .tstle {
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    #clock {
+        font-size: 20px;
+        color: #555;
+        margin-top: 5px;
+    }
+</style>
+
+<link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
+
+<div style="text-align:center">
+    <h2 class="ttle">FFC Cable Inspection and Control</h2>
+</div>
+<hr />
+<input value="Administrator" id="Rol" name="Rol" readonly="@true" hidden="hidden"/>
+
+<h4 class="Tittlelabel" style="text-align:center">Review of Report | @ViewBag.id</h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    Indicate the current status of the FFC cable | Time Assignment
+</p>
+<br />
+
+<h4 class="Tittlelabel" style="text-align:center">Status Now: </h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px"> @ViewBag.status </p>
+<input value="@ViewBag.status" name="Status" id="Status" hidden="hidden" />
+
+@*<br />
+<div style="text-align:center;">
+    <button id="exportPDF" class="btn btn-danger mb-3" style="width: 35vh">
+        <i data-lucide="download"></i> Complete Report
+    </button>
+</div>*@
+
+<hr />
+
+<h2 class="tstle">
+    | Real-time clock |
+    <div id="clock"></div>
+</h2>
+
+<hr />
+
+<h4 class="Tittlelabel" style="text-align:center">Internal Model: </h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    @ViewBag.ModeloInterno
+</p>
+
+<h4 class="Tittlelabel" style="text-align:center">Estacion de Linea: </h4>
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+    @ViewBag.stations
+</p>
+
+<br />
+
+ @*Sección de Modelo interno, PCBA y Operador FCT 
+<div Style="margin-top:20px; padding:10px; border:1px solid #000; border-radius:8px; background-color:#f9f9f9;">
+    <div style="display:flex; justify-content: space-around; margin-bottom:15px;">
+        <div style="width: 50%; text-align: center;">
+            <p style="font-weight:bold;">Modelo Interno:</p>
+            <p>@ViewBag.ModeloInterno</p>
+        </div>
+        <div style="width:50%; text-align:center;">
+            <p style="font-weight:bold;">PCBA:</p>
+            <p>@ViewBag.PCBA</p>
+        </div>
+    </div>
+</div>*@
+
+<style>
+
+    .tabla-revision {
+        width: 80%;
+        margin: 20px auto;
+        border-collapse: collapse;
+        font-family: Arial, sans-serif;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+        .tabla-revision thead {
+            background-color: #f0f0f0;
+        }
+
+        .tabla-revision th, .tabla-revision td {
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .tabla-revision th {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tabla-revision input[type="radio"] {
+            margin: 0 5px;
+            transform: scale(1.2);
+        }
+
+        /* Opcional: Zebra stripes */
+        .tabla-revision tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+</style>
+
+<form id="formRevision" method="post" action="@Url.Action("GuardarRevisiones", "Home")">
+    <input type="hidden" name="Select" id="selectValue" />
+    <input type="hidden" name="Hora" id="horaSeleccionada" />
+    <input type="hidden" name="Numero" id="numeroSeleccionado" />
+    <input type="hidden" name="OperadorFCT" value="@ViewBag.OperadorFCT" />
+    <input type="hidden" name="folio" value="@ViewBag.id" />
+    <input type="hidden" name="ModeloInterno" value="@ViewBag.ModeloInterno" />
+
+    @*<pre>
+
+       @foreach (var hora in resultados.Keys)
+        {
+            <text>@hora:</text>
+            foreach (var paso in resultados[hora])
+            {
+                <text> Paso @paso.Key = @paso.Value</text><br />
+            }
+        }
+
+    </pre>*@
+
+    <table class="tabla-revision">
+        <thead>
+            <tr>
+                <th>HORA</th>
+                <th>| 1 |</th>
+                <th>| 2 |</th>
+                <th>| 3 |</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @for (int i = 0; i < horas.Length; i++)
+            {
+                var h = horas[i]; // clave para checkbox
+                var label = displayHoras[i]; // ej: "6:30 AM"
+
+                <tr data-time-label="@label">
+                    <td>@label</td>
+
+                    @for (int paso = 1; paso <= 3; paso++)
+                    {
+                        string nombreCampo = paso == 1 ? $"Checkbox{h}_Modelo" :
+                                             paso == 2 ? $"Checkbox{h}_PCBA" :
+                                                         $"Checkbox{h}_Operador";
+
+                        string clase = $"check-{h}-{paso}";
+                        string valor = "";
+
+                        if (resultados != null && resultados.ContainsKey(label) && resultados[label].ContainsKey(paso))
+                        {
+                            valor = (resultados[label][paso] ?? "").Trim().ToUpper(); // 👈 limpia y normaliza
+                        }
+
+                        string claseCelda = "";
+                        if (valor == "OK")
+                        {
+                            claseCelda = "celda-revisada";
+                        }
+                        else if (valor == "NG")
+                        {
+                            claseCelda = "celda-revisada-NG";
+                        }
+                        else if (valor == "-" || string.IsNullOrEmpty(valor))
+                        {
+                            claseCelda = "celda-no-revisada";
+                        }
+
+                        <td class="@claseCelda">
+                            <input type="radio" name="@nombreCampo" value="OK" class="check @clase" @(valor == "OK" ? "checked" : "") />
+                            OK
+                            <input type="radio" name="@nombreCampo" value="NG" class="check @clase" @(valor == "NG" ? "checked" : "") />
+                            NG
+                        </td>
+                    }
+                </tr>
+            }
+
+        </tbody>
+    </table>
+
+</form>
+
+<!-- Sección de Operador FCT -->
+<div style="margin-top:20px; padding:10px; border:1px solid #000; border-radius:8px; background-color:#f9f9f9;">
+    <p style="font-weight:bold;">Operador FCT:</p>
+    <p>@ViewBag.OperadorFCT</p>
+</div>
+
+<script>
+    function updateClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+    }
+
+    const bloques = [
+        { id: "6_30AM", hour: 6, minute: 30 },
+        { id: "7_30AM", hour: 7, minute: 30 },
+        { id: "8_30AM", hour: 8, minute: 30 },
+        { id: "9_30AM", hour: 9, minute: 30 },
+        { id: "10_30AM", hour: 10, minute: 30 },
+        { id: "11_30AM", hour: 11, minute: 30 },
+        { id: "12_30PM", hour: 12, minute: 30 },
+        { id: "1_30PM", hour: 13, minute: 30 },
+        { id: "2_30PM", hour: 14, minute: 30 },
+        { id: "3_30PM", hour: 15, minute: 30 },
+        { id: "4_30PM", hour: 16, minute: 30 },
+        { id: "5_30PM", hour: 17, minute: 30 },
+        { id: "6_30PM", hour: 18, minute: 30 },
+        { id: "7_30PM", hour: 19, minute: 30 },
+        { id: "8_30PM", hour: 20, minute: 30 },
+        { id: "9_30PM", hour: 21, minute: 30 },
+        { id: "10_30PM", hour: 22, minute: 30 },
+        { id: "11_30PM", hour: 23, minute: 30 },
+        { id: "12_30AM", hour: 24, minute: 30 },
+        { id: "1_30AM", hour: 1, minute: 30 },
+        { id: "2_30AM", hour: 2, minute: 30 },
+        { id: "3_30AM", hour: 3, minute: 30 },
+        { id: "4_30AM", hour: 4, minute: 30 },
+        { id: "5_30AM", hour: 5, minute: 30 }
+    ];
+
+    function controlarRadios() {
+        const now = new Date();
+        const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+        let bloqueActual = null;
+
+        for (let i = 0; i < bloques.length - 1; i++) {
+            const start = bloques[i].hour * 60 + bloques[i].minute;
+            const end = bloques[i + 1].hour * 60 + bloques[i + 1].minute;
+
+            if (currentTotalMinutes >= start && currentTotalMinutes < end) {
+                bloqueActual = bloques[i];
+                break;
+            }
+        }
+
+        // Si estamos en el último bloque (después de 6:30 PM)
+        if (!bloqueActual && currentTotalMinutes >= (bloques[bloques.length - 1].hour * 60 + bloques[bloques.length - 1].minute)) {
+            bloqueActual = bloques[bloques.length - 1];
+        }
+
+        // Deshabilitar todos los radios
+        document.querySelectorAll("input[type=radio].check").forEach(radio => radio.disabled = true);
+
+        if (bloqueActual) {
+            const minutosDentroDelBloque = currentTotalMinutes - (bloqueActual.hour * 60 + bloqueActual.minute);
+            let col = 1;
+            if (minutosDentroDelBloque >= 20 && minutosDentroDelBloque < 40) {
+                col = 2;
+            } else if (minutosDentroDelBloque >= 40) {
+                col = 3;
+            }
+
+            const clase = `.check-${bloqueActual.id}-${col}`;
+            document.querySelectorAll(clase).forEach(radio => radio.disabled = false);
+        }
+    }
+
+    setInterval(() => {
+        updateClock();
+        controlarRadios();
+    }, 1000);
+
+    updateClock();
+    controlarRadios();
+</script>
+
+<script>
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const valor = this.value;
+
+            const fila = this.closest('tr');
+            const horaTexto = fila.getAttribute('data-time-label');
+
+            const clase = Array.from(this.classList).find(c => c.startsWith('check-'));
+            const partes = clase.split('-'); // ["check", "0630", "1"]
+            const numero = partes[2]; // número de columna
+
+            document.getElementById('selectValue').value = valor;
+            document.getElementById('horaSeleccionada').value = horaTexto;
+            document.getElementById('numeroSeleccionado').value = numero;
+
+            document.getElementById('formRevision').submit();
+            alert("Etapa marcada correctamente ! ");
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const status = document.getElementById("Status").value;
+
+        if (status === "COMPLETE") {
+            const table = document.querySelector(".tabla-revision");
+            const inputs = table.querySelectorAll("input[type='radio']");
+            inputs.forEach(input => {
+                input.disabled = true;
+            });
+
+            // Opcional: cambiar la opacidad de la tabla para que parezca deshabilitada visualmente
+            table.style.opacity = "0.6";
+            table.style.pointerEvents = "none"; // evita interacciones visuales
+        }
+    });
+</script>
