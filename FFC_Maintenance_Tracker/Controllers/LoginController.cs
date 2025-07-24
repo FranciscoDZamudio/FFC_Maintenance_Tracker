@@ -58,6 +58,13 @@ namespace FFC_Maintenance_Tracker.Controllers
             }
             else
             {
+                // GUARDAR DATOS EN COOKIE (duración: 7 días)
+                HttpCookie userCookie = new HttpCookie("UserInfo");
+                userCookie["Username"] = Username;
+                userCookie["Rol"] = type;
+                userCookie.Expires = DateTime.Now.AddDays(7); // Puedes ajustar esto
+                Response.Cookies.Add(userCookie);
+
                 ViewBag.message = "";
                 Session["Username"] = Username.ToString();
                 Session["Type"] = type.ToString();

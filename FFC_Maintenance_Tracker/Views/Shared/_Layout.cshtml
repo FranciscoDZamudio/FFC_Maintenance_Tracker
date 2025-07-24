@@ -15,6 +15,7 @@
         var controller = ViewContext.RouteData.Values["controller"]?.ToString();
         var action = ViewContext.RouteData.Values["action"]?.ToString();
         var showTopBar = !(controller == "Login" && action == "LogIn");
+        var isLoginPage = controller == "Login" && action == "LogIn";
     }
 
     @if (showTopBar)
@@ -88,6 +89,21 @@
 </body>
 
 </html>
+
+@if (!isLoginPage)
+{
+    <script>
+        setInterval(() => {
+            fetch('/Home/PingSession')
+                .then(response => {
+                    if (!response.ok) throw new Error('Network error');
+                    return response.text();
+                })
+                .then(text => console.log('Ping response:', text))
+                .catch(err => console.error('Fetch error:', err));
+        }, 120000); // cada 2 minutos
+    </script>
+}
 
 <script>
     function openMenu() {

@@ -7,6 +7,13 @@ using System.Data.SqlClient;
 using FFC_Maintenance_Tracker.Models;
 using System.Globalization;
 using System.IO;
+using System.Configuration;
+using System.Net.Mail;
+using System.Net;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
+using System.Text.RegularExpressions;
 
 namespace FFC_Maintenance_Tracker.Controllers
 {
@@ -23,6 +30,13 @@ namespace FFC_Maintenance_Tracker.Controllers
         List<Reportes> QeuryListadoReportes = new List<Reportes>();
         List<Registros> ListadoRegistros = new List<Registros>();
         List<Detalles> ListadoDetalles = new List<Detalles>();
+
+        public ActionResult PingSession()
+        {
+            // Solo para mantener viva la sesión
+            var user = Session["Username"];
+            return Content("OK");
+        }
 
         [HttpGet]
         public JsonResult GetEmployeeInfo(string employeeId)
@@ -76,10 +90,144 @@ namespace FFC_Maintenance_Tracker.Controllers
             return Json(new { success = false, message = "Empleado no encontrado" }, JsonRequestBehavior.AllowGet);
         }
 
+        public ActionResult TestEmail()
+        {
+            SendEmail("panchodelgadozam@gmail.com", "Correo de prueba", "Este es un test de envío de correo desde ASP.NET MVC.");
+            return Content("Correo enviado.");
+        }
+
+        public void EnviarSMS(string numeroDestino, string mensaje)
+    {
+        var message = MessageResource.Create(
+            body: mensaje,
+            from: new PhoneNumber("+15186768198"), // tu número comprado en Twilio
+            to: new PhoneNumber(numeroDestino)
+        );
+
+        Console.WriteLine($"Mensaje enviado a {numeroDestino}: {message.Sid}");
+    }
+
+        [HttpPost]
+        public ActionResult CheckIncompleteReport(string bloqueId, string linea)
+        {
+            // Validar existencia de sesión desde cookies
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
+            string lineaBD = null, estacionBD = null, estadoReporte = null;
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["AMIFCC"].ConnectionString))
+                using (SqlCommand cmd = new SqlCommand("SELECT Line, Estacion, Estado FROM AMI_FCCSystemsFolio WHERE Folio = @folio AND Active = '1'", conn))
+                {
+                    cmd.Parameters.AddWithValue("@folio", linea);
+
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            lineaBD = reader["Line"]?.ToString();
+                            estacionBD = reader["Estacion"]?.ToString();
+                            estadoReporte = reader["Estado"]?.ToString(); // Aquí obtienes el estado
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejo básico de error
+                ViewBag.Folio = "Error al consultar los datos del reporte: " + ex.Message;
+                return PartialView("_NotificacionReporte");
+            }
+
+            ViewBag.Folio = linea;
+            ViewBag.Linea = lineaBD;
+            ViewBag.Estacion = estacionBD;
+            ViewBag.Hora = DateTime.Now.ToString("HH:mm");
+            ViewBag.Status = (estadoReporte != null && estadoReporte.ToUpper() == "INCOMPLETE") ? "INCOMPLETE" : "CERRADO";
+
+            return PartialView("_NotificacionReporte");
+        }
+
+        [HttpPost]
+        public JsonResult CheckAndSendEmail(int bloqueId)
+        {
+            string folio = "";
+            bool correoEnviado = false;
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["Data Source=172.29.72.15 ;Initial Catalog=AMI_Request ;User ID=sa; password=newshamu"].ConnectionString))
+                using (SqlCommand cmd = new SqlCommand(@"
+            SELECT TOP 1 Folio 
+            FROM [AMI_Request].[dbo].[AMI_FCCSystemsFolio] 
+            WHERE Status = 'INCOMPLETE' AND Active = 1 AND ID = @BloqueId", conn))
+                {
+                    cmd.Parameters.AddWithValue("@BloqueId", bloqueId);
+                    conn.Open();
+                    var result = cmd.ExecuteScalar();
+                    if (result != null)
+                    {
+                        folio = result.ToString();
+
+                        // Aquí envías el correo
+                        string subject = "Reporte INCOMPLETO - Minuto 20 alcanzado";
+                        string body = $"El reporte con folio {folio} ha alcanzado los 20 minutos y sigue INCOMPLETO.";
+
+                        SendEmail("panchodelgadozam@gmail.com", subject, body);
+                        correoEnviado = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Loguear si es necesario
+            }
+
+            return Json(new { enviado = correoEnviado, folio = folio });
+        }
+
+        private void SendEmail(string to, string subject, string body)
+        {
+            string gmailUser = "ffcmain7@gmail.com";
+            string gmailPassword = "fcot tscn wuws qsxh";
+
+            //System.Diagnostics.Debug.WriteLine($"GmailUser: '{gmailUser}'");
+            //System.Diagnostics.Debug.WriteLine($"GmailAppPassword: '{gmailPassword}'");
+
+            var mail = new MailMessage();
+            mail.To.Add(to);
+            mail.Subject = subject;
+            mail.Body = body;
+            mail.IsBodyHtml = false;
+            mail.From = new MailAddress(gmailUser, "FFC Cable Inspection and Control Notification");
+
+            using (var smtp = new SmtpClient("smtp.gmail.com"))
+            {
+                smtp.Port = 587;
+                smtp.Credentials = new NetworkCredential(gmailUser, gmailPassword);
+                smtp.EnableSsl = true;
+                smtp.Send(mail);
+            }
+        }
+
         public ActionResult GenerarPDFAll(string folio)
         {
-            
-
             using (var stream = new MemoryStream())
             {
 
@@ -87,60 +235,176 @@ namespace FFC_Maintenance_Tracker.Controllers
                 return File(stream.ToArray(), "application/pdf", $"Reporte_{folio + " | " + folio + " | " + folioDate}.pdf");
             }
         }
-
+ 
         [HttpPost]
-        public ActionResult GuardarRevisiones(string Select, string OperadorFCT, string folio, string ModeloInterno, string Hora, string Numero)
+        public ActionResult GuardarRevisiones(string Select, string OperadorFCT, string folio, string Hora, string Numero, string Usuario)
         {
-            string usuario = Session["Username"].ToString();
-            // Convertir "6:30 AM" a formato 24h "06:30"
-            DateTime horaConvertida = DateTime.ParseExact(Hora.Trim(), "h:mm tt", CultureInfo.InvariantCulture);
-            string hora24 = horaConvertida.ToString("HH:mm");
+            Hora = Regex.Replace(Hora, @"\s+", " ").Trim();
 
-            string updateQuery = "";
-            switch (Numero)
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
             {
-                case "1":
-                    updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
+            ViewBag.username = Session["Username"];
+
+            //string usuario = Session["Username"].ToString();
+            // Solo convertir si contiene ':'
+
+            //data is correctly variables index!
+
+            //realizar un string y seleccionar unicamente los 6 primeros caracteres
+            string Number = Usuario.ToString();
+            Number = Number.Substring(0, 6);
+            Number = Number.Substring((Number.Length - 5), 5);
+            Usuario = Number;
+            int convertion = Int32.Parse(Number);
+
+            //-----------------------------------------------------------------
+            //indicar si el valor es mayor de 1000 indica a numero de empleado mas viejos
+            //-----------------------------------------------------------------
+
+            if (convertion <= 10)
+            {
+                Number = Number.Substring((Number.Length - 1), 1);
+                Usuario = Number;
+            }
+            else
+            {
+                //-----------------------------------------------------------------
+                if (convertion <= 100)
+                {
+                    Number = Number.Substring((Number.Length - 2), 2);
+                    Usuario = Number;
+                }
+                else
+                {
+                    //-----------------------------------------------------------------
+                    if (convertion <= 1000)
+                    {
+                        Number = Number.Substring((Number.Length - 3), 3);
+                        Usuario = Number;
+                    }
+                    else
+                    {
+                        //-----------------------------------------------------------------
+                        if (convertion > 1000 && convertion <= 10000)
+                        {
+                            Number = Number.Substring((Number.Length - 4), 4);
+                            Usuario = Number;
+                        }
+                        else
+                        {
+                            //-----------------------------------------------------------------
+                            if (convertion > 10000)
+                            {
+                                Number = Number.Substring((Number.Length - 5), 5);
+                                Usuario = Number;
+                            }
+                        }
+                    }
+                }
+            }
+        
+            string usernames = null;
+
+            SqlCommand NAME = new SqlCommand("Select * from ListadoEmpleadosDepartamento " +
+                        " where ID_Empleado = '" + Usuario + "' and Estatus = 'A'", DBEmployee);
+            DBEmployee.Open();
+            SqlDataReader drNAME = NAME.ExecuteReader();
+            if (drNAME.HasRows)
+            {
+                while (drNAME.Read())
+                {
+                    usernames = drNAME["NombreCompleto"].ToString();
+                }
+            }
+            else
+            {
+                usernames = "/";
+            }
+            DBEmployee.Close();
+
+            if (usernames == "/")
+            {
+                return RedirectToAction("Report", new { id = folio });
+            }
+            else
+            {
+                try
+                {
+                    // Convertir "6:30 AM" a formato 24h "06:30"
+                    DateTime horaConvertida = DateTime.ParseExact(Hora.Trim(), "h:mm tt", CultureInfo.InvariantCulture);
+                    string hora24 = horaConvertida.ToString("HH:mm");
+
+                    string updateQuery = "";
+                    switch (Numero)
+                    {
+                        case "1":
+                            updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
                             DateReview1 = @Fecha, 
                             UserRevidew1 = @Usuario, 
                             Setp1_One = @Valor 
                         WHERE Folio = @ID AND Timed = @Timed";
-                    break;
-                case "2":
-                    updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
+                            break;
+                        case "2":
+                            updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
                             DateReview2 = @Fecha, 
                             UserRevidew2 = @Usuario, 
                             Setp2_Two = @Valor 
                         WHERE Folio = @ID AND Timed = @Timed";
-                    break;
-                case "3":
-                    updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
+                            break;
+                        case "3":
+                            updateQuery = @"UPDATE AMI_FCCSystemsRecords SET 
                             DateReview3 = @Fecha, 
                             UserRevidew3 = @Usuario, 
                             Setp3_Trh = @Valor 
                         WHERE Folio = @ID AND Timed = @Timed";
-                    break;
-                default:
-                    throw new Exception("Número de revisión inválido");
+                            break;
+                        default:
+                            throw new Exception("Número de revisión inválido");
+                    }
+
+                    using (SqlCommand command = new SqlCommand(updateQuery, AMIFCC))
+                    {
+                        AMIFCC.Open();
+
+                        command.Parameters.AddWithValue("@Fecha", DateTime.Now);
+                        command.Parameters.AddWithValue("@Usuario", usernames);
+                        command.Parameters.AddWithValue("@Valor", Select);
+                        command.Parameters.AddWithValue("@ID", folio);
+                        command.Parameters.AddWithValue("@Timed", hora24);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        AMIFCC.Close();
+                    }
+
+                    return RedirectToAction("Report", new { id = folio });
+                }
+                catch (FormatException ex)
+                {
+                    // Retorna un error detallado al cliente (JS)
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Formato de Hora inválido: '{Hora}'"
+                    });
+                }
+
             }
-
-            using (SqlCommand command = new SqlCommand(updateQuery, AMIFCC))
-            {
-                AMIFCC.Open();
-
-                command.Parameters.AddWithValue("@Fecha", DateTime.Now);
-                command.Parameters.AddWithValue("@Usuario", usuario);
-                command.Parameters.AddWithValue("@Valor", Select);
-                command.Parameters.AddWithValue("@ID", folio);
-                command.Parameters.AddWithValue("@Timed", hora24);
-
-                int rowsAffected = command.ExecuteNonQuery();
-
-                AMIFCC.Close();
-            }
-
-            return RedirectToAction("Report", new { id = folio});
-
         }
 
         public ActionResult Menu()
@@ -156,35 +420,55 @@ namespace FFC_Maintenance_Tracker.Controllers
         }
 
         [HttpPost]
-        public ActionResult GenReport(string Line, string WhoCreate, string Internal, string Placa, string Station)
+        public ActionResult GenReport(string Line, string WhoCreate, string Internal, string Placa, string Station, string Credentials)
         {
-            ViewBag.username = Session["Username"];
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
 
-            if (Session.Count <= 0)
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
             {
                 return RedirectToAction("LogIn", "Login");
             }
-            else
+
+            ViewBag.username = Session["Username"];
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
             {
-                //data is correctly variables index!
-                string Area = null, Departament = null;
+                return RedirectToAction("LogIn", "Login");
+            }
+
+            ViewBag.username = Session["Username"];
+
+            //data is correctly variables index!
+            string Area = null, Departament = null, usernames = null;
 
                 SqlCommand NAME = new SqlCommand("Select * from ListadoEmpleadosDepartamento " +
-                            " where NombreCompleto = '" + WhoCreate + "' and Estatus = 'A'", DBEmployee);
+                            " where ID_Empleado = '" + Credentials + "' and Estatus = 'A'", DBEmployee);
                 DBEmployee.Open();
                 SqlDataReader drNAME = NAME.ExecuteReader();
                 if (drNAME.HasRows)
                 {
                     while (drNAME.Read())
                     {
-                        Area = drNAME["Area"].ToString();
-                        Departament = drNAME["Departamento1"].ToString();
+                    usernames = drNAME["NombreCompleto"].ToString();
+                    Area = drNAME["Area"].ToString();
+                    Departament = drNAME["Departamento1"].ToString();
                     }
                 }
                 DBEmployee.Close();
 
                 string createFol = DateTime.Now.ToString("yyyyMMddHHmmss");
-                string username = Session["Username"].ToString();
+                //string username = Session["Username"].ToString();
 
                 // Guardar información en base de datos
                 AMIFCC.Open();
@@ -195,14 +479,14 @@ namespace FFC_Maintenance_Tracker.Controllers
                 cmd.Parameters.AddWithValue("@Estacion", Station);
                 cmd.Parameters.AddWithValue("@Area", Area);
                 cmd.Parameters.AddWithValue("@Departament", Departament);
-                cmd.Parameters.AddWithValue("@Operator", WhoCreate);
+                cmd.Parameters.AddWithValue("@Operator", usernames);
 
-                cmd.Parameters.AddWithValue("@QRMain", Placa.ToUpper());
+                cmd.Parameters.AddWithValue("@QRMain", "-");
                 cmd.Parameters.AddWithValue("@Folio", "AMI" + createFol);
                 cmd.Parameters.AddWithValue("@Line", "L"+ Line);
-                cmd.Parameters.AddWithValue("@Who_create", WhoCreate.ToString());
+                cmd.Parameters.AddWithValue("@Who_create", usernames.ToString());
                 cmd.Parameters.AddWithValue("@Active", true);
-                cmd.Parameters.AddWithValue("@InternalModel", Internal.ToUpper());
+                cmd.Parameters.AddWithValue("@InternalModel", "-");
                 cmd.Parameters.AddWithValue("@PCBA", "-");
                 cmd.Parameters.AddWithValue("@Status", "INCOMPLETE");
                 cmd.ExecuteNonQuery();
@@ -239,25 +523,71 @@ namespace FFC_Maintenance_Tracker.Controllers
                 }
                 AMIFCC.Close();
 
-                ReportesListed(username);
+                ReportesListed(usernames);
                 ViewBag.Record = ListadoReportes;
                 ViewBag.count = ListadoReportes.Count;
                 ViewBag.message = "";
+
+                string lines = null;
+                // Obtener tipo de usuario
+                SqlCommand queryType = new SqlCommand("SELECT * FROM AMI_FCCSystemsUsers WHERE Active = '1' AND Username = @username", AMIFCC);
+                queryType.Parameters.AddWithValue("@username", usernames);
+
+                AMIFCC.Open();
+                SqlDataReader drqueryType = queryType.ExecuteReader();
+                if (drqueryType.Read())
+                {
+                    lines = drqueryType["Line"].ToString();
+                }
+                AMIFCC.Close();
+
+                string results = null;
+
+                if (lines == "All")
+                {
+                    results = "All";
+                }
+                else
+                {
+                    results = lines.Length > 1 ? lines.Substring(1) : string.Empty;
+                }
+
+                ViewBag.Line = results;
+
                 return View();
-            }
+            
         }
 
         public ActionResult GenReport()
         {
-            ViewBag.username = Session["Username"];
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
 
-            if (Session.Count <= 0)
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
             {
                 return RedirectToAction("LogIn", "Login");
             }
-            else
+
+            ViewBag.username = Session["Username"];
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
             {
-                string username = Session["Username"].ToString();
+                return RedirectToAction("LogIn", "Login");
+            }
+
+            ViewBag.username = Session["Username"];
+
+            string username = Session["Username"].ToString();
                 ReportesListed(username);
                 ViewBag.Record = ListadoReportes;
                 ViewBag.count = ListadoReportes.Count;
@@ -337,12 +667,35 @@ namespace FFC_Maintenance_Tracker.Controllers
 
                 Console.WriteLine($"Se actualizaron {registrosActualizados} registros.");
                 return View();
-            }
+            
         }
 
         public ActionResult Users()
         {
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
             ViewBag.username = Session["Username"];
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
 
             if (Session.Count <= 0)
             {
@@ -350,6 +703,7 @@ namespace FFC_Maintenance_Tracker.Controllers
             }
             else
             {
+                ViewBag.username = Session["Username"];
                 UsuariosListed();
                 ViewBag.Record = ListadoEmpleados;
                 ViewBag.count = ListadoEmpleados.Count;
@@ -361,6 +715,23 @@ namespace FFC_Maintenance_Tracker.Controllers
         [HttpPost]
         public ActionResult Users(string TypeUsers, string Credentials, string Pass, string Line, string Station, string Shift)
         {
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
             ViewBag.username = Session["Username"];
 
             if (Session.Count <= 0)
@@ -369,110 +740,156 @@ namespace FFC_Maintenance_Tracker.Controllers
             }
             else
             {
-                //data is correctly variables index!
-                string Username = null,Area = null, Departament = null, hmx = null;
-
-                SqlCommand NAME = new SqlCommand("Select * from ListadoEmpleadosDepartamento " +
-                            " where ID_Empleado = '" + Credentials + "' and Estatus = 'A'", DBEmployee);
-                DBEmployee.Open();
-                SqlDataReader drNAME = NAME.ExecuteReader();
-                if (drNAME.HasRows)
+                if (TypeUsers == "Produccion")
                 {
-                    while (drNAME.Read())
+                    string NewLine = null;
+
+                    if (TypeUsers == "Administrator")
                     {
-                        Username = drNAME["NombreCompleto"].ToString();
-                        Area = drNAME["Area"].ToString();
-                        Departament = drNAME["Departamento1"].ToString();
-                        hmx = "HMX" + drNAME["FolioHisense"].ToString();
+                        Station = "All";
+                        NewLine = "All";
                     }
-                }
-                else
-                {
-                    Username = "0";
-                }
-                DBEmployee.Close();
+                    else
+                    {
+                        NewLine = "L" + Line;
+                    }
 
-                //validacion de usuario | si no existe
+                    //Guardar informacion a la base de datos del proyecto
+                    AMIFCC.Open();
+                    SqlCommand PalletControl = new SqlCommand("insert into AMI_FCCSystemsUsers" +
+                        "(Shift,EstacionAssig,Line, Type, Username, password, EmployeeNumber, HMX, Departament, Area, DateAdded, DatetimeAdded, Active) values " +
+                        "(@Shift,@EstacionAssig,@Line,@Type, @Username, @password, @EmployeeNumber, @HMX, @Departament, @Area, getdate(), getdate(), @Active) ", AMIFCC);
+                    //--------------------------------------------------------------------------------------------------------------------------------
+                    PalletControl.Parameters.AddWithValue("@EstacionAssig", "undefined");
+                    PalletControl.Parameters.AddWithValue("@Shift", Shift.ToString());
+                    PalletControl.Parameters.AddWithValue("@Line", NewLine.ToString());
+                    PalletControl.Parameters.AddWithValue("@Type", TypeUsers.ToString());
+                    PalletControl.Parameters.AddWithValue("@Username", NewLine.ToUpper());
+                    PalletControl.Parameters.AddWithValue("@password", Pass.ToString());
+                    PalletControl.Parameters.AddWithValue("@EmployeeNumber", "0");
+                    PalletControl.Parameters.AddWithValue("@HMX", NewLine.ToUpper());
+                    //PalletControl.Parameters.AddWithValue("@Dates", AddTxt_test1.Text);
+                    //PalletControl.Parameters.AddWithValue("@Datetimes", AddTxt_test2.Text);
+                    PalletControl.Parameters.AddWithValue("@Area", "undefined");
+                    PalletControl.Parameters.AddWithValue("@Departament", "undefined");
+                    PalletControl.Parameters.AddWithValue("@Active", true);
+                    PalletControl.ExecuteNonQuery();
+                    AMIFCC.Close();
 
-                if (Username == "0")
-                {
+                    ViewBag.message = "";
+
                     UsuariosListed();
                     ViewBag.Record = ListadoEmpleados;
                     ViewBag.count = ListadoEmpleados.Count;
-
-                    ViewBag.message = "Message: User no found ! please try again . . . ";
                     return RedirectToAction("Users", "Home");
                 }
                 else
                 {
-                    string val = null;
-                    SqlCommand Diplicatequery = new SqlCommand("Select * from AMI_FCCSystemsUsers where Active = '1' and EmployeeNumber = '" + Credentials + "'", AMIFCC);
-                    AMIFCC.Open();
-                    SqlDataReader drDiplicatequery = Diplicatequery.ExecuteReader();
-                    if (drDiplicatequery.HasRows)
+                    //data is correctly variables index!
+                    string Username = null, Area = null, Departament = null, hmx = null;
+
+                    SqlCommand NAME = new SqlCommand("Select * from ListadoEmpleadosDepartamento " +
+                                " where ID_Empleado = '" + Credentials + "' and Estatus = 'A'", DBEmployee);
+                    DBEmployee.Open();
+                    SqlDataReader drNAME = NAME.ExecuteReader();
+                    if (drNAME.HasRows)
                     {
-                        while (drDiplicatequery.Read())
+                        while (drNAME.Read())
                         {
-                            val = drDiplicatequery["Username"].ToString();
+                            Username = drNAME["NombreCompleto"].ToString();
+                            Area = drNAME["Area"].ToString();
+                            Departament = drNAME["Departamento1"].ToString();
+                            hmx = "HMX" + drNAME["FolioHisense"].ToString();
                         }
                     }
                     else
                     {
-                        val = "no duplicate";
+                        Username = "0";
                     }
-                    AMIFCC.Close();
+                    DBEmployee.Close();
 
-                    if (val == "no duplicate")
+                    //validacion de usuario | si no existe
+
+                    if (Username == "0")
                     {
-                        string NewLine = null;
+                        UsuariosListed();
+                        ViewBag.Record = ListadoEmpleados;
+                        ViewBag.count = ListadoEmpleados.Count;
 
-                        if (TypeUsers == "Administrator")
+                        ViewBag.message = "Message: User no found ! please try again . . . ";
+                        return RedirectToAction("Users", "Home");
+                    }
+                    else
+                    {
+                        string val = null;
+                        SqlCommand Diplicatequery = new SqlCommand("Select * from AMI_FCCSystemsUsers where Active = '1' and EmployeeNumber = '" + Credentials + "'", AMIFCC);
+                        AMIFCC.Open();
+                        SqlDataReader drDiplicatequery = Diplicatequery.ExecuteReader();
+                        if (drDiplicatequery.HasRows)
                         {
-                            Station = "All";
-                            NewLine = "All";
+                            while (drDiplicatequery.Read())
+                            {
+                                val = drDiplicatequery["Username"].ToString();
+                            }
                         }
                         else
                         {
-                            NewLine = "L" + Line;
+                            val = "no duplicate";
                         }
-
-                        //Guardar informacion a la base de datos del proyecto
-                        AMIFCC.Open();
-                        SqlCommand PalletControl = new SqlCommand("insert into AMI_FCCSystemsUsers" +
-                            "(Shift,EstacionAssig,Line, Type, Username, password, EmployeeNumber, HMX, Departament, Area, DateAdded, DatetimeAdded, Active) values " +
-                            "(@Shift,@EstacionAssig,@Line,@Type, @Username, @password, @EmployeeNumber, @HMX, @Departament, @Area, getdate(), getdate(), @Active) ", AMIFCC);
-                        //--------------------------------------------------------------------------------------------------------------------------------
-                        PalletControl.Parameters.AddWithValue("@EstacionAssig", Station.ToString());
-                        PalletControl.Parameters.AddWithValue("@Shift", Shift.ToString());
-                        PalletControl.Parameters.AddWithValue("@Line", NewLine.ToString());
-                        PalletControl.Parameters.AddWithValue("@Type", TypeUsers.ToString());
-                        PalletControl.Parameters.AddWithValue("@Username", Username.ToString());
-                        PalletControl.Parameters.AddWithValue("@password", Pass.ToString());
-                        PalletControl.Parameters.AddWithValue("@EmployeeNumber", Credentials.ToString());
-                        PalletControl.Parameters.AddWithValue("@HMX", hmx.ToString());
-                        //PalletControl.Parameters.AddWithValue("@Dates", AddTxt_test1.Text);
-                        //PalletControl.Parameters.AddWithValue("@Datetimes", AddTxt_test2.Text);
-                        PalletControl.Parameters.AddWithValue("@Area", Area.ToString());
-                        PalletControl.Parameters.AddWithValue("@Departament", Departament.ToString());
-                        PalletControl.Parameters.AddWithValue("@Active", true);
-                        PalletControl.ExecuteNonQuery();
                         AMIFCC.Close();
 
-                        ViewBag.message = "";
+                        if (val == "no duplicate")
+                        {
+                            string NewLine = null;
 
-                        UsuariosListed();
-                        ViewBag.Record = ListadoEmpleados;
-                        ViewBag.count = ListadoEmpleados.Count;
-                        return RedirectToAction("Users", "Home");
-                    }
-                    else
-                    {
-                        UsuariosListed();
-                        ViewBag.Record = ListadoEmpleados;
-                        ViewBag.count = ListadoEmpleados.Count;
+                            if (TypeUsers == "Administrator")
+                            {
+                                Station = "All";
+                                NewLine = "All";
+                            }
+                            else
+                            {
+                                NewLine = "L" + Line;
+                            }
 
-                        ViewBag.message = "Message: This username already exists. Please choose a different username";
-                        return RedirectToAction("Users", "Home");
+                            //Guardar informacion a la base de datos del proyecto
+                            AMIFCC.Open();
+                            SqlCommand PalletControl = new SqlCommand("insert into AMI_FCCSystemsUsers" +
+                                "(Shift,EstacionAssig,Line, Type, Username, password, EmployeeNumber, HMX, Departament, Area, DateAdded, DatetimeAdded, Active) values " +
+                                "(@Shift,@EstacionAssig,@Line,@Type, @Username, @password, @EmployeeNumber, @HMX, @Departament, @Area, getdate(), getdate(), @Active) ", AMIFCC);
+                            //--------------------------------------------------------------------------------------------------------------------------------
+                            PalletControl.Parameters.AddWithValue("@EstacionAssig", Station.ToString());
+                            PalletControl.Parameters.AddWithValue("@Shift", Shift.ToString());
+                            PalletControl.Parameters.AddWithValue("@Line", NewLine.ToString());
+                            PalletControl.Parameters.AddWithValue("@Type", TypeUsers.ToString());
+                            PalletControl.Parameters.AddWithValue("@Username", Username.ToString());
+                            PalletControl.Parameters.AddWithValue("@password", Pass.ToString());
+                            PalletControl.Parameters.AddWithValue("@EmployeeNumber", Credentials.ToString());
+                            PalletControl.Parameters.AddWithValue("@HMX", hmx.ToString());
+                            //PalletControl.Parameters.AddWithValue("@Dates", AddTxt_test1.Text);
+                            //PalletControl.Parameters.AddWithValue("@Datetimes", AddTxt_test2.Text);
+                            PalletControl.Parameters.AddWithValue("@Area", Area.ToString());
+                            PalletControl.Parameters.AddWithValue("@Departament", Departament.ToString());
+                            PalletControl.Parameters.AddWithValue("@Active", true);
+                            PalletControl.ExecuteNonQuery();
+                            AMIFCC.Close();
+
+                            ViewBag.message = "";
+
+                            UsuariosListed();
+                            ViewBag.Record = ListadoEmpleados;
+                            ViewBag.count = ListadoEmpleados.Count;
+                            return RedirectToAction("Users", "Home");
+                        }
+                        else
+                        {
+                            UsuariosListed();
+                            ViewBag.Record = ListadoEmpleados;
+                            ViewBag.count = ListadoEmpleados.Count;
+
+                            ViewBag.message = "Message: This username already exists. Please choose a different username";
+                            return RedirectToAction("Users", "Home");
+                        }
                     }
                 }
             }
@@ -578,6 +995,23 @@ namespace FFC_Maintenance_Tracker.Controllers
 
         public ActionResult Report(string id)
         {
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
             ViewBag.username = Session["Username"];
 
             if (Session.Count <= 0)
@@ -586,7 +1020,7 @@ namespace FFC_Maintenance_Tracker.Controllers
             }
             else
             {
-                string internalMd = null, PCBA = null, Whocreate = null, Station = null;
+                string internalMd = null, PCBA = null, Whocreate = null, Station = null, lines = null;
                 // Obtener tipo de usuario
                 SqlCommand queryType = new SqlCommand("SELECT * FROM AMI_FCCSystemsFolio " +
                     " WHERE Active = '1' AND Folio = @Folio", AMIFCC);
@@ -600,6 +1034,9 @@ namespace FFC_Maintenance_Tracker.Controllers
                     PCBA = drqueryType["PCBA"].ToString();
                     Whocreate = drqueryType["Who_create"].ToString();
                     Station = drqueryType["QRMain"].ToString();
+                    DateTime fechaOriginal = Convert.ToDateTime(drqueryType["DatetimtimeAdded"]);
+                    ViewBag.Finish = fechaOriginal.AddDays(1).ToString("yyyy-MM-dd HH:mm:ss");
+                    ViewBag.lines = drqueryType["Line"].ToString();
                 }
                 AMIFCC.Close();
 
@@ -654,36 +1091,53 @@ namespace FFC_Maintenance_Tracker.Controllers
                     "WHERE Active = '1' AND Folio = @Folio", AMIFCC);
                 DateSelected.Parameters.AddWithValue("@Folio", id);
 
-                AMIFCC.Open();
-                SqlDataReader drDateSelected = DateSelected.ExecuteReader();
-                if (drDateSelected.Read())
+                int registrosActualizados = 0;
+
+                string selectQuery = "SELECT ID, Folio, DatetimtimeAdded, Status FROM AMI_FCCSystemsFolio WHERE Active = '1'";
+
+                using (SqlCommand selectCommand = new SqlCommand(selectQuery, AMIFCC))
                 {
-                    status = drDateSelected["Status"].ToString();
-                    dates = drDateSelected["DateAdded"].ToString();
-                    DateTime parsedDate;
-                    if (DateTime.TryParse(dates, out parsedDate))
+                    AMIFCC.Open();
+                    SqlDataReader reader = selectCommand.ExecuteReader();
+
+                    var registros = new List<(int ID, string Folio, DateTime DateAdded, string Status)>();
+
+                    while (reader.Read())
                     {
-                        fechaBase = parsedDate.Date;
+                        int ids = Convert.ToInt32(reader["ID"]);
+                        string folio = reader["Folio"].ToString();
+                        string statuss = reader["Status"].ToString();
+                        DateTime dateAdded;
+
+                        if (DateTime.TryParse(reader["DatetimtimeAdded"].ToString(), out dateAdded))
+                        {
+                            registros.Add((ids, folio, dateAdded /* sin .Date */, statuss));
+                        }
                     }
-                }
-                AMIFCC.Close();
+                    AMIFCC.Close();
 
-                int rowsAffected = 0;
-
-                // Solo ejecutar UPDATE si ya pasó al siguiente día
-                if (fechaBase.HasValue && DateTime.Now.Date > fechaBase.Value)
-                {
-                    string updateQuery = "UPDATE AMI_FCCSystemsFolio SET Status = @Status WHERE Folio = @ID";
-                    using (SqlCommand command = new SqlCommand(updateQuery, AMIFCC))
+                    AMIFCC.Open();
+                    foreach (var r in registros)
                     {
-                        AMIFCC.Open();
-                        command.Parameters.AddWithValue("@Status", "COMPLETE");
-                        command.Parameters.AddWithValue("@ID", id);
-                        rowsAffected = command.ExecuteNonQuery();
-                        AMIFCC.Close();
+                        if (r.Status != "COMPLETE" && DateTime.Now >= r.DateAdded.AddHours(24))
+                        {
+                            string updateQuery = "UPDATE AMI_FCCSystemsFolio SET Status = @Status WHERE ID = @ID";
+                            using (SqlCommand updateCommand = new SqlCommand(updateQuery, AMIFCC))
+                            {
+                                updateCommand.Parameters.AddWithValue("@Status", "COMPLETE");
+                                updateCommand.Parameters.AddWithValue("@ID", r.ID);
+
+                                int result = updateCommand.ExecuteNonQuery();
+
+                                if (result > 0)
+                                    registrosActualizados++;
+                            }
+                        }
                     }
+                    AMIFCC.Close();
                 }
 
+                Console.WriteLine($"Se actualizaron {registrosActualizados} registros.");
 
                 ViewBag.ModeloInterno = internalMd;
                 ViewBag.stations = Station;
@@ -691,8 +1145,8 @@ namespace FFC_Maintenance_Tracker.Controllers
                 ViewBag.id = id;
                 ViewBag.message = "";
                 ViewBag.dates = dates;
-                ViewBag.status = status;
 
+                string val = null;
                 var resultados = new Dictionary<string, Dictionary<int, string>>();
 
                 using (SqlConnection con = new SqlConnection("Data Source=172.29.72.15; Initial Catalog=AMI_Request; User ID=sa; password=newshamu"))
@@ -739,7 +1193,17 @@ namespace FFC_Maintenance_Tracker.Controllers
 
                 ViewBag.ResultadosRevision = resultados;
 
-                
+                SqlCommand Diplicatequery = new SqlCommand("Select * from AMI_FCCSystemsFolio where Active = '1' and Folio = '" + id + "'", AMIFCC);
+                AMIFCC.Open();
+                SqlDataReader drDiplicatequery = Diplicatequery.ExecuteReader();
+                if (drDiplicatequery.HasRows)
+                {
+                    while (drDiplicatequery.Read())
+                    {
+                        ViewBag.status = drDiplicatequery["Status"].ToString();
+                    }
+                }
+                AMIFCC.Close();
 
                 return View();
             }
@@ -748,6 +1212,23 @@ namespace FFC_Maintenance_Tracker.Controllers
         [HttpGet]
         public ActionResult Historys(string DateInitial, string DateFinal)
         {
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
             ViewBag.username = Session["Username"];
 
             if (Session.Count <= 0)
@@ -767,21 +1248,26 @@ namespace FFC_Maintenance_Tracker.Controllers
                 value = "";
             }
 
-            string user = Session["Username"].ToString();
-
-            // Obtener tipo de usuario
-            SqlCommand Refresh = new SqlCommand("SELECT * FROM AMI_FCCSystemsUsers WHERE Active = '1' AND Username = @username", AMIFCC);
-            Refresh.Parameters.AddWithValue("@username", user);
-
-            AMIFCC.Open();
-            SqlDataReader drRefresh = Refresh.ExecuteReader();
-            if (drRefresh.Read())
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
             {
-                ViewBag.Type = drRefresh["Type"].ToString();
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
             }
-            AMIFCC.Close();
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
 
             ViewBag.username = Session["Username"];
+
+            string user = Session["Username"].ToString();
          
             if (Session.Count <= 0)
             {
@@ -789,8 +1275,57 @@ namespace FFC_Maintenance_Tracker.Controllers
             }
             else
             {
+                int registrosActualizados = 0;
+
+                string selectQuery = "SELECT ID, Folio, DatetimtimeAdded, Status FROM AMI_FCCSystemsFolio WHERE Active = '1'";
+
+                using (SqlCommand selectCommand = new SqlCommand(selectQuery, AMIFCC))
+                {
+                    AMIFCC.Open();
+                    SqlDataReader reader = selectCommand.ExecuteReader();
+
+                    var registros = new List<(int ID, string Folio, DateTime DateAdded, string Status)>();
+
+                    while (reader.Read())
+                    {
+                        int id = Convert.ToInt32(reader["ID"]);
+                        string folio = reader["Folio"].ToString();
+                        string status = reader["Status"].ToString();
+                        DateTime dateAdded;
+
+                        if (DateTime.TryParse(reader["DatetimtimeAdded"].ToString(), out dateAdded))
+                        {
+                            registros.Add((id, folio, dateAdded /* sin .Date */, status));
+                        }
+                    }
+                    AMIFCC.Close();
+
+                    AMIFCC.Open();
+                    foreach (var r in registros)
+                    {
+                        if (r.Status != "COMPLETE" && DateTime.Now >= r.DateAdded.AddHours(24))
+                        {
+                            string updateQuery = "UPDATE AMI_FCCSystemsFolio SET Status = @Status WHERE ID = @ID";
+                            using (SqlCommand updateCommand = new SqlCommand(updateQuery, AMIFCC))
+                            {
+                                updateCommand.Parameters.AddWithValue("@Status", "COMPLETE");
+                                updateCommand.Parameters.AddWithValue("@ID", r.ID);
+
+                                int result = updateCommand.ExecuteNonQuery();
+
+                                if (result > 0)
+                                    registrosActualizados++;
+                            }
+                        }
+                    }
+                    AMIFCC.Close();
+                }
+
+                Console.WriteLine($"Se actualizaron {registrosActualizados} registros.");
+
                 if (value == "1")
                 {
+
                     if (DateInitial == "")
                     {
                         DateInitial = null;
@@ -827,6 +1362,7 @@ namespace FFC_Maintenance_Tracker.Controllers
                         if (drqueryType.Read())
                         {
                             type = drqueryType["Type"].ToString();
+                            ViewBag.Type = drqueryType["Type"].ToString();
                         }
                         AMIFCC.Close();
 
@@ -879,6 +1415,21 @@ namespace FFC_Maintenance_Tracker.Controllers
                     else
                     {
                         string username = Session["Username"].ToString();
+
+                        string type = null;
+                        // Obtener tipo de usuario
+                        SqlCommand queryType = new SqlCommand("SELECT Type FROM AMI_FCCSystemsUsers WHERE Active = '1' AND Username = @username", AMIFCC);
+                        queryType.Parameters.AddWithValue("@username", username);
+
+                        AMIFCC.Open();
+                        SqlDataReader drqueryType = queryType.ExecuteReader();
+                        if (drqueryType.Read())
+                        {
+                            type = drqueryType["Type"].ToString();
+                            ViewBag.Type = drqueryType["Type"].ToString();
+                        }
+                        AMIFCC.Close();
+
                         ReportesListed(username);
                         ViewBag.Record = ListadoReportes;
                         ViewBag.count = ListadoReportes.Count;
@@ -907,52 +1458,6 @@ namespace FFC_Maintenance_Tracker.Controllers
                     ViewBag.Record = ListadoReportes;
                     ViewBag.count = ListadoReportes.Count;
                     ViewBag.message = "";
-
-                    int registrosActualizados = 0;
-
-                    string selectQuery = "SELECT ID, Folio, DateAdded, Status FROM AMI_FCCSystemsFolio WHERE Active = '1'";
-
-                    using (SqlCommand selectCommand = new SqlCommand(selectQuery, AMIFCC))
-                    {
-                        AMIFCC.Open();
-                        SqlDataReader reader = selectCommand.ExecuteReader();
-
-                        List<(int ID, string Folio, DateTime DateAdded, string Status)> registros = new List<(int, string, DateTime, string)>();
-
-                        while (reader.Read())
-                        {
-                            int id = Convert.ToInt32(reader["ID"]);
-                            string folio = reader["Folio"].ToString();
-                            string status = reader["Status"].ToString();
-                            DateTime dateAdded;
-
-                            if (DateTime.TryParse(reader["DateAdded"].ToString(), out dateAdded))
-                            {
-                                registros.Add((id, folio, dateAdded.Date, status));
-                            }
-                        }
-                        AMIFCC.Close();
-
-                        foreach (var r in registros)
-                        {
-                            if (r.Status != "COMPLETE" && DateTime.Now.Date > r.DateAdded)
-                            {
-                                string updateQuery = "UPDATE AMI_FCCSystemsFolio SET Status = @Status WHERE ID = @ID";
-                                using (SqlCommand updateCommand = new SqlCommand(updateQuery, AMIFCC))
-                                {
-                                    updateCommand.Parameters.AddWithValue("@Status", "COMPLETE");
-                                    updateCommand.Parameters.AddWithValue("@ID", r.ID);
-
-                                    AMIFCC.Open();
-                                    int result = updateCommand.ExecuteNonQuery();
-                                    AMIFCC.Close();
-
-                                    if (result > 0)
-                                        registrosActualizados++;
-                                }
-                            }
-                        }
-                    }
                 }
 
                 return View();
@@ -961,6 +1466,23 @@ namespace FFC_Maintenance_Tracker.Controllers
 
         public ActionResult Review(string id)
         {
+            // Validar existencia de sesión, recuperando desde cookies si es necesario
+            if (Session["Username"] == null && Request.Cookies["UserCookie"] != null)
+            {
+                Session["Username"] = Request.Cookies["UserCookie"].Value;
+            }
+
+            if (Session["Type"] == null && Request.Cookies["TypeCookie"] != null)
+            {
+                Session["Type"] = Request.Cookies["TypeCookie"].Value;
+            }
+
+            // Si no hay sesión, redirigir al login
+            if (Session["Username"] == null || Session["Type"] == null)
+            {
+                return RedirectToAction("LogIn", "Login");
+            }
+
             ViewBag.username = Session["Username"];
 
             if (Session.Count <= 0)
@@ -984,8 +1506,61 @@ namespace FFC_Maintenance_Tracker.Controllers
                     ViewBag.internalmodel = drqueryType["InternalModel"].ToString();
                     ViewBag.pcba = drqueryType["PCBA"].ToString();
                     ViewBag.operadorFCT = drqueryType["Operator"].ToString();
+                    ViewBag.line = drqueryType["Line"].ToString();
+                    ViewBag.date = drqueryType["DatetimtimeAdded"].ToString();
                 }
                 AMIFCC.Close();
+
+                using (SqlConnection AMIFCC = new SqlConnection("Data Source=172.29.72.15 ;Initial Catalog=AMI_Request ;User ID=sa; password=newshamu"))
+                {
+                    AMIFCC.Open(); // asegúrate de abrirla si no está abierta
+
+                    string folio = id.ToString();
+
+                    string sql = @"
+    DECLARE @Folio VARCHAR(50) = @FolioParam;
+    SELECT
+        STUFF((
+            SELECT DISTINCT
+                '  |  ' + REPLACE(U.Username, '-', '') + ' (' + ISNULL(U.Shift, 'Sin Turno') + ')'
+            FROM (
+                SELECT UserRevidew1 AS Username
+                FROM [AMI_Request].[dbo].[AMI_FCCSystemsRecords]
+                WHERE Folio = @Folio AND UserRevidew1 IS NOT NULL
+
+                UNION ALL
+
+                SELECT UserRevidew2
+                FROM [AMI_Request].[dbo].[AMI_FCCSystemsRecords]
+                WHERE Folio = @Folio AND UserRevidew2 IS NOT NULL
+
+                UNION ALL
+
+                SELECT UserRevidew3
+                FROM [AMI_Request].[dbo].[AMI_FCCSystemsRecords]
+                WHERE Folio = @Folio AND UserRevidew3 IS NOT NULL
+            ) AS Reviews
+            LEFT JOIN [AMI_Request].[dbo].[AMI_FCCSystemsUsers] U
+                ON U.Username = Reviews.Username
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)'), 1, 5, '') AS UsuariosConTurno;";
+
+                    using (SqlCommand cmd = new SqlCommand(sql, AMIFCC))
+                    {
+                        cmd.Parameters.AddWithValue("@FolioParam", folio);
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                ViewBag.UsuariosAsociados = reader["UsuariosConTurno"].ToString();
+                            }
+                        }
+                    }
+
+                    AMIFCC.Close(); // explícitamente cerrar si la abriste tú
+                }
+
 
                 return View();
             }
@@ -1024,6 +1599,7 @@ namespace FFC_Maintenance_Tracker.Controllers
 
         private void ReportesListed(string user)
         {
+
             string type = null, line = null;
             // Obtener tipo de usuario
             SqlCommand queryType = new SqlCommand("SELECT Type,Line FROM AMI_FCCSystemsUsers WHERE Active = '1' AND Username = @username", AMIFCC);

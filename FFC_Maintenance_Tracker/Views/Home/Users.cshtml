@@ -4,6 +4,7 @@
 }
 
 <link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
+
 <style>
     .employee-photo {
         width: 110px; /* Ajusta el tamaño según sea necesario */
@@ -32,29 +33,34 @@
     <div class="group">
         <select name="TypeUsers" id="TypeUsers" class="form-control" style="max-width:100%; color:black">
             <option value="Administrator">Administrator</option>
-            <option value="Users">Users</option>
+            <option value="Produccion">Produccion</option>
         </select>
     </div>
 
-    <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
     <div class="center-wrapper">
+        <h5 style="text-align: center; color: #5264AE; font-weight: 700" id="lblShift" name="lblShift">Select Shift:</h5>
+    </div>
+
+    <div class="center-wrapper">
+
         <select name="Shift" id="Shift" class="form-control" style="max-width:100%; color:black">
-            <option value="">Select Shift:</option>
             <option value="A">A</option>
             <option value="B">B</option>
         </select>
     </div>
 
-    <br /><br />
+    <br />
+    <br />
 
     <div class="group">
-        <input type="number" id="Credentials" name="Credentials" required>
+        <input type="number" id="Credentials" name="Credentials">
         <span class="highlight"></span>
         <span class="bar"></span>
-        <label>Employee Number:</label>
+        <label id="lblEmployee" name="lblEmployee">Employee Number:</label>
     </div>
 
     <div class="form-and-card-container">
+
         <!-- Tarjeta Usuario -->
         <div id="employee-card" class="card-user" style="display: none;">
             <h4 class="card-title">USUARIO</h4>
@@ -73,33 +79,41 @@
                 <label>Ejemplo de campo</label>
             </div>
         </div>
+
     </div>
 
     <br />
     <br />
+
+    <div class="group">
+        <input type="number" id="Line" name="Line">
+        <span class="highlight"></span>
+        <span class="bar"></span>
+        <label>Enter the line number:</label>
+    </div>
 
     <!-- Contenedor que se oculta/visualiza dinámicamente -->
-    <div id="lineStationContainer">
-        <div class="group">
-            <input type="number" id="Line" name="Line">
-            <span class="highlight"></span>
-            <span class="bar"></span>
-            <label>Enter the line number:</label>
-        </div>
+<div id="lineStationContainer" style="display: none;">
 
-        <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
-        <div class="group">
-            <select name="Station" id="Station" class="form-control" style="max-width:100%; color:black">
-                <option value="">Select a station</option>
-            </select>
-        </div>
+    <h5 id="stationsTitle" style="text-align: center; color: #5264AE; font-weight: 700; display: none;">Stations:</h5>
+
+    <div class="group" id="stationGroup" style="display: none;">
+        <select name="Station" id="Station" class="form-control" style="max-width:100%; color:black; display: none;">
+            <option value="">Select a station</option>
+        </select>
     </div>
+</div>
 
     <script>
         const stationSelect = document.getElementById('Station');
         const lineInput = document.getElementById('Line');
         const typeSelect = document.getElementById('TypeUsers');
         const lineStationContainer = document.getElementById('lineStationContainer');
+
+        const Shift = document.getElementById('Shift');
+        const lblShift = document.getElementById('lblShift');
+        const Credenciales = document.getElementById('Credentials');
+        const lblCredenciales = document.getElementById('lblEmployee');
 
         const stationsByLine = {
             1: [101, 102, 103, 104, 105, 106],
@@ -110,42 +124,107 @@
             6: [601, 602, 603, 604, 605, 606, 607, 608, 609]
         };
 
-        // Mostrar u ocultar Line y Station según el tipo seleccionado
         typeSelect.addEventListener('change', function () {
+            // limpiar valores de línea, estación y credenciales
+            lineInput.value = "";
+            stationSelect.innerHTML = '<option value="">Select a station</option>';
+            Credenciales.value = "";
+
+            const employeeCard = document.getElementById("employee-card");
+            const formWrapper = document.querySelector(".form-wrapper");
+
             if (this.value === "Administrator") {
-                lineStationContainer.style.display = "none";
-                // limpiar valores
-                lineInput.value = "";
-                stationSelect.innerHTML = '<option value="">Select a station</option>';
+                lineStationContainer.style.display = "block";
+                Shift.style.display = "inline-block";
+                lblShift.style.display = "inline-block";
+                Credenciales.style.display = "inline-block";
+                lblCredenciales.style.display = "inline-block";
+
+                // ocultar tarjeta y formulario
+                employeeCard.style.display = "none";
+                formWrapper.style.display = "none";
+
+            } else if (this.value === "Produccion") {
+                lineStationContainer.style.display = "block";
+                Shift.style.display = "none";
+                lblShift.style.display = "none";
+                Credenciales.style.display = "none";
+                lblCredenciales.style.display = "none";
+
+                // ocultar tarjeta y formulario
+                employeeCard.style.display = "none";
+                formWrapper.style.display = "none";
+
             } else {
                 lineStationContainer.style.display = "block";
+                Shift.style.display = "none";
+                lblShift.style.display = "none";
+                Credenciales.style.display = "none";
+                lblCredenciales.style.display = "none";
+
+                // mostrar por defecto (puedes ajustar si lo deseas diferente)
+                employeeCard.style.display = "block";
+                formWrapper.style.display = "block";
             }
         });
 
-        // Inicializar oculto si el valor inicial es "Administrator"
         window.addEventListener('DOMContentLoaded', () => {
-            if (typeSelect.value === "Administrator") {
-                lineStationContainer.style.display = "none";
+            const employeeCard = document.getElementById("employee-card");
+            const formWrapper = document.querySelector(".form-wrapper");
+
+            if (typeSelect.value === "Produccion") {
+                Credenciales.value = "";
+
+                lineStationContainer.style.display = "block";
+                Shift.style.display = "none";
+                lblShift.style.display = "none";
+                Credenciales.style.display = "none";
+                lblCredenciales.style.display = "none";
+
+                employeeCard.style.display = "none";
+                formWrapper.style.display = "none";
+
+            } else if (typeSelect.value === "Administrator") {
+                lineStationContainer.style.display = "block";
+                Shift.style.display = "inline-block";
+                lblShift.style.display = "inline-block";
+                Credenciales.style.display = "inline-block";
+                lblCredenciales.style.display = "inline-block";
+                // ocultar tarjeta y formulario
+                employeeCard.style.display = "none";
+                formWrapper.style.display = "none";
+
+            } else {
+                lineStationContainer.style.display = "block";
+                Shift.style.display = "none";
+                lblShift.style.display = "none";
+                Credenciales.style.display = "none";
+                lblCredenciales.style.display = "none";
+
+                // ocultar tarjeta y formulario
+                employeeCard.style.display = "none";
+                formWrapper.style.display = "none";
             }
         });
 
-        // Manejo de estaciones según línea
-        lineInput.addEventListener('change', function () {
-            const line = parseInt(this.value);
-            const stations = stationsByLine[line];
-            stationSelect.innerHTML = '<option value="">Select a station</option>';
 
-            if (stations) {
-                stations.forEach(station => {
-                    const option = document.createElement('option');
-                    option.value = station;
-                    option.textContent = station;
-                    stationSelect.appendChild(option);
-                });
-            } else if (typeSelect.value !== "Administrator") {
-                alert("❌ Línea inválida. Por favor ingresa un número del 1 al 6.");
-            }
-        });
+        //// Manejo de estaciones según línea
+        //lineInput.addEventListener('change', function () {
+        //    const line = parseInt(this.value);
+        //    const stations = stationsByLine[line];
+        //    stationSelect.innerHTML = '<option value="">Select a station</option>';
+
+        //    if (stations) {
+        //        stations.forEach(station => {
+        //            const option = document.createElement('option');
+        //            option.value = station;
+        //            option.textContent = station;
+        //            stationSelect.appendChild(option);
+        //        });
+        //    } else if (typeSelect.value !== "Administrator") {
+        //        alert("❌ Línea inválida. Por favor ingresa un número del 1 al 6.");
+        //    }
+        //});
     </script>
 
     <br />
@@ -174,19 +253,32 @@
 
 <div class="table-scroll">
     <ul class="responsive-table">
+
         <li class="table-header" id="tableData">
+
             <div class="col col-1">Username</div>
+
             <div class="col col-2">HMX</div>
+
             <div class="col col-3">Type</div>
+
             <div class="col col-3">Line</div>
+
             <div class="col col-3">EstacionAssig</div>
+
             <div class="col col-4">Departament</div>
+
             <div class="col col-5">Area</div>
+
             <div class="col col-6">Date</div>
+
             <div class="col col-7">Options</div>
+
         </li>
+
         @foreach (var person in ViewBag.Record)
         {
+
             <li class="table-row" id="tblCustomers">
 
                 <div class="col col-1" data-label="Username"> @person.Username</div>
@@ -212,6 +304,7 @@
                 </div>
 
             </li>
+
         }
     </ul>
 </div>

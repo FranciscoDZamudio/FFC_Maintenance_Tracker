@@ -18,19 +18,21 @@
 {
     <div class="container" style="text-align: center; width: 100%; height: 100%">
         <div style="text-align: center; min-width: 100%; ">
-            <p style="text-align: center;">&nbsp;</p>
 
-            <h5 style="text-align: center; color: #5264AE; font-weight: 700">User's Full Name: </h5>
+            @*<h5 style="text-align: center; color: #5264AE; font-weight: 700">User's Full Name: </h5>
             <div class="center-wrapper">
                 <input type="text" id="WhoCreate" name="WhoCreate" value="@ViewBag.username" readonly required>
-            </div>
-            <input value="@ViewBag.Line" id="lineSelected" name="lineSelected" type="hidden" />
+            </div>*@
 
+            <input value="@ViewBag.Line" id="lineSelected" name="lineSelected" hidden />
+
+            <br />
             <h5 style="text-align: center; color: #5264AE; font-weight: 700">Line: </h5>
             <div class="center-wrapper">
-                <input type="text" id="Line" name="Line" required>
+                <input type="text" id="Line" name="Line" required readonly>
             </div>
 
+            <br />
             <h5 style="text-align: center; color: #5264AE; font-weight: 700">Stations:</h5>
             <div class="center-wrapper">
                 <select name="Station" id="Station" class="form-control" style="max-width:100%; color:black">
@@ -38,7 +40,38 @@
                 </select>
             </div>
 
-            <br />
+            <br /> <br /> <br />
+
+            <div class="group">
+                <input type="number" id="Credentials" name="Credentials">
+                <span class="highlight"></span>
+                <span class="bar"></span>
+                <label id="lblEmployee" name="lblEmployee">Who Create Report:</label>
+            </div>
+
+            <div class="form-and-card-container">
+
+                <!-- Formulario -->
+                <div class="form-wrapper" style="display: none;">
+                    <div class="group">
+                        <input type="text" name="Example">
+                        <span class="highlight"></span>
+                        <span class="bar"></span>
+                        <label>Ejemplo de campo</label>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Usuario -->
+                <div id="employee-card" class="card-user" style="display: none;">
+                    <h4 class="card-title">USUARIO</h4>
+                    <img id="card-photo" src="@Url.Content("~/Images/default-user.png")" class="employee-photo" alt="Foto del empleado">
+                    <p id="card-name">Nombre completo</p>
+                    <p id="card-area">Área: ---</p>
+                    <p id="card-department">Departamento: ---</p>
+                </div>
+
+            </div>
+
             <!--<h5>Escáner QR (Compatible con HTTP en Firefox/Edge móvil)</h5>
     <div class="center-wrapper">-->
             <!-- En tu vista Razor o archivo HTML -->
@@ -51,21 +84,21 @@
     <div class="center-wrapper">
         <input type="text" id="QR" name="QR" placeholder="Resultado del QR" style="padding: 5px; " readonly />
     </div>-->
-            <br />
-            <div class="group">
-                <input type="text" id="Placa" name="Placa" required>
-                <span class="highlight"></span>
-                <span class="bar"></span>
-                <label>Placa Main:</label>
-            </div>
+            @*<br />
+        <div class="group">
+            <input type="text" id="Placa" name="Placa" required>
+            <span class="highlight"></span>
+            <span class="bar"></span>
+            <label>Placa Main:</label>
+        </div>
 
-            <br />
-            <div class="group">
-                <input type="text" id="Internal" name="Internal" required>
-                <span class="highlight"></span>
-                <span class="bar"></span>
-                <label>Internal Model:</label>
-            </div>
+        <br />
+        <div class="group">
+            <input type="text" id="Internal" name="Internal" required>
+            <span class="highlight"></span>
+            <span class="bar"></span>
+            <label>Internal Model:</label>
+        </div>*@
 
             <br>
             <p style="text-align: center; color: red; font-family: Trebuchet MS, sans-serif; font-size: 15px"> @ViewBag.message </p>
@@ -75,20 +108,60 @@
                 </button>
             </div>
         </div>
-        </div>
+    </div>
 }
 
 <hr />
 <!--<div class="center-wrapper">-->
-    <!-- Botón para iniciar escaneo -->
-    <!--<button type="button" id="btnStartScanner">📷 Escanear</button>
+<!-- Botón para iniciar escaneo -->
+<!--<button type="button" id="btnStartScanner">📷 Escanear</button>
 </div>-->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script>
-        // Dinámica para estaciones por línea
+<script>
+    document.getElementById('Credentials').addEventListener('blur', function () {
+        const empNumber = this.value.trim();
+        const card = document.getElementById('employee-card');
+
+        if (!empNumber) {
+            card.style.display = 'none';
+            return;
+        }
+
+        const url = '@Url.Action("GetEmployeeInfo", "Home")' + '?employeeId=' + encodeURIComponent(empNumber);
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error("Error en la respuesta");
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.employee) {
+                    // Asignar datos al card
+                    document.getElementById('card-photo').src = data.employee.photoUrl;
+                    document.getElementById('card-name').textContent = data.employee.fullName;
+                    document.getElementById('card-area').textContent = "Área: " + data.employee.area;
+                    document.getElementById('card-department').textContent = "Departamento: " + data.employee.department;
+
+                    card.style.display = 'block';
+                } else {
+                    alert("Empleado no encontrado.");
+                    card.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Error al consultar el empleado.");
+                card.style.display = 'none';
+            });
+    });
+</script>
+    
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
         const stationSelect = document.getElementById('Station');
         const lineInput = document.getElementById('Line');
+        const lineSelected = document.getElementById('lineSelected');
 
         const stationsByLine = {
             1: [101, 102, 103, 104, 105, 106],
@@ -99,7 +172,7 @@
             6: [601, 602, 603, 604, 605, 606, 607, 608, 609]
         };
 
-        lineInput.addEventListener('change', () => {
+        function cargarEstaciones() {
             const line = parseInt(lineInput.value);
             const stations = stationsByLine[line];
 
@@ -115,34 +188,50 @@
             } else {
                 alert("❌ Línea inválida. Por favor ingresa un número del 1 al 6.");
             }
-        });
-    </script>
+        }
 
-    <!-- qr-scanner librería -->
-    <!--<script>
-        const qrInput = document.getElementById("QR");
+        const valor = lineSelected.value.trim().toLowerCase();
 
-        const html5Qr = new Html5Qrcode("reader");
+        if (valor === "all") {
+            // Habilitar edición libre
+            lineInput.removeAttribute('readonly');
 
-        Html5Qrcode.getCameras().then(cameras => {
-            if (cameras && cameras.length > 0) {
-                const camId = cameras[0].id;
+            // Escuchar cambios manuales
+            lineInput.addEventListener('change', cargarEstaciones);
+        } else {
+            // Colocar valor directamente y bloquear edición
+            lineInput.value = lineSelected.value;
+            lineInput.setAttribute('readonly', true);
+            cargarEstaciones(); // Cargar directamente
+        }
+    });
+</script>
 
-                html5Qr.start(
-                    camId,
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    qrText => {
-                        qrInput.value = qrText;
-                        html5Qr.stop();
-                    },
-                    error => {
-                        // console.warn("QR scan error", error);
-                    }
-                );
-            } else {
-                alert("No se encontró cámara.");
-            }
-        }).catch(err => {
-            alert("Error al acceder a la cámara: " + err);
-        });
-    </script>-->
+<!-- qr-scanner librería -->
+<!--<script>
+    const qrInput = document.getElementById("QR");
+
+    const html5Qr = new Html5Qrcode("reader");
+
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+            const camId = cameras[0].id;
+
+            html5Qr.start(
+                camId,
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                qrText => {
+                    qrInput.value = qrText;
+                    html5Qr.stop();
+                },
+                error => {
+                    // console.warn("QR scan error", error);
+                }
+            );
+        } else {
+            alert("No se encontró cámara.");
+        }
+    }).catch(err => {
+        alert("Error al acceder a la cámara: " + err);
+    });
+</script>-->

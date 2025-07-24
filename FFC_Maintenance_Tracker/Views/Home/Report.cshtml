@@ -49,28 +49,119 @@
 
 <link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
 
+<style>
+    #panelRevision {
+        display: none;
+        position: fixed;
+        top: 30%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff;
+        border: 2px solid #333;
+        padding: 20px 30px;
+        z-index: 9999;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        text-align: center;
+        min-width: 280px;
+    }
+
+        #panelRevision p#labelBloque {
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        #panelRevision div {
+            margin: 20px 0;
+        }
+
+        #panelRevision label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        #panelRevision button {
+            width: 110px;
+            margin: 0 10px;
+            font-size: 1em;
+            padding: 7px 10px;
+            cursor: pointer;
+        }
+</style>
+
+<!-- Panel emergente personalizado -->
+<div id="panelRevision" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+    background:#fff; border:2px solid #333; padding:20px; z-index:9999; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.5); text-align:center;">
+    <h4 style="margin-bottom:15px;color:#c26d05">Revisión del bloque actual</h4>
+    <p id="labelBloque"></p>
+    <p><strong>Número de revisión:</strong> <span id="numeroRevisionText"></span></p>
+    <div>
+
+        <p><input type="checkbox" name="panelSelect" value="OK"> OK</p>
+        <img src="~/Pictures/FFcOK.jpg" style="width:200px" />
+        <hr>
+        <p><input type="checkbox" name="panelSelect" value="NG"> NG</p>
+        <img src="~/Pictures/FFcNG.jpg" style="width:200px" />
+        <hr>
+        <p style="font-weight:700; color:#067d6e"> Enter your employee number </p>
+        <input type="text" style="background-color: #D8D2D2; font-weight: 700;" id="Credentials" name="Credentials" required />
+        <hr>
+
+    </div>
+    <button id="btnConfirmarRevision" class="btn btn-success">Confirmar</button>
+    <button id="btnCancelarRevision" class="btn btn-secondary">Cancelar</button>
+</div>
+
+<script>
+    const checkboxes = document.querySelectorAll('input[name="panelSelect"]');
+
+    checkboxes.forEach(chk => {
+        chk.addEventListener('change', function () {
+            if (this.checked) {
+                // Desmarcar los demás
+                checkboxes.forEach(other => {
+                    if (other !== this) other.checked = false;
+                });
+            }
+        });
+    });
+</script>
+
 <div style="text-align:center">
     <h2 class="ttle">FFC Cable Inspection and Control</h2>
 </div>
 <hr />
-<input value="Administrator" id="Rol" name="Rol" readonly="@true" hidden="hidden"/>
+<input value="Administrator" id="Rol" name="Rol" readonly="@true" hidden="hidden" />
 
 <h4 class="Tittlelabel" style="text-align:center">Review of Report | @ViewBag.id</h4>
+
 <p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
     Indicate the current status of the FFC cable | Time Assignment
 </p>
 <br />
 
 <h4 class="Tittlelabel" style="text-align:center">Status Now: </h4>
-<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px"> @ViewBag.status </p>
-<input value="@ViewBag.status" name="Status" id="Status" hidden="hidden" />
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px" id="status" name="status"> @ViewBag.status </p>
+<input value="@ViewBag.status" name="Status" id="CurrentStatus" hidden="hidden" />
+<input value="@ViewBag.Finish" name="FinishTime" id="FinishTime" hidden="hidden" />
 
+<br />
+<div style="text-align:center">
+    <h4 class="Tittlelabel" style="margin-top: 5px;text-align:center; font-weight: bold; color: white; padding: 4px 8px; border-radius: 4px; display: inline-block; background-color: #831518; ">
+        Report Closed
+    </h4>
+</div>
+
+<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px"> @ViewBag.Finish </p>
 @*<br />
-<div style="text-align:center;">
-    <button id="exportPDF" class="btn btn-danger mb-3" style="width: 35vh">
-        <i data-lucide="download"></i> Complete Report
-    </button>
-</div>*@
+    <div style="text-align:center;">
+        <button id="exportPDF" class="btn btn-danger mb-3" style="width: 35vh">
+            <i data-lucide="download"></i> Complete Report
+        </button>
+    </div>*@
 
 <hr />
 
@@ -81,31 +172,37 @@
 
 <hr />
 
-<h4 class="Tittlelabel" style="text-align:center">Internal Model: </h4>
-<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
-    @ViewBag.ModeloInterno
-</p>
+@*<h4 class="Tittlelabel" style="text-align:center">Internal Model: </h4>
+    <p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+        @ViewBag.ModeloInterno
+    </p>
 
-<h4 class="Tittlelabel" style="text-align:center">Estacion de Linea: </h4>
-<p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
-    @ViewBag.stations
-</p>
+    <h4 class="Tittlelabel" style="text-align:center">Estacion de Linea: </h4>
+    <p style="text-align: center; font-family: Trebuchet MS, sans-serif; font-size:15px">
+        @ViewBag.stations
+    </p>*@
 
 <br />
-
- @*Sección de Modelo interno, PCBA y Operador FCT 
-<div Style="margin-top:20px; padding:10px; border:1px solid #000; border-radius:8px; background-color:#f9f9f9;">
-    <div style="display:flex; justify-content: space-around; margin-bottom:15px;">
-        <div style="width: 50%; text-align: center;">
-            <p style="font-weight:bold;">Modelo Interno:</p>
-            <p>@ViewBag.ModeloInterno</p>
-        </div>
-        <div style="width:50%; text-align:center;">
-            <p style="font-weight:bold;">PCBA:</p>
-            <p>@ViewBag.PCBA</p>
-        </div>
+@*<div style="text-align:center">
+        <button id="btnNotificaciones">🔔 Activar notificaciones</button>
     </div>
-</div>*@
+    <br />*@
+
+<h4 class="Tittlelabel" style="text-align:center"> ◽| Hourly Interval Review |◽ </h4>
+
+@*Sección de Modelo interno, PCBA y Operador FCT
+    <div Style="margin-top:20px; padding:10px; border:1px solid #000; border-radius:8px; background-color:#f9f9f9;">
+        <div style="display:flex; justify-content: space-around; margin-bottom:15px;">
+            <div style="width: 50%; text-align: center;">
+                <p style="font-weight:bold;">Modelo Interno:</p>
+                <p>@ViewBag.ModeloInterno</p>
+            </div>
+            <div style="width:50%; text-align:center;">
+                <p style="font-weight:bold;">PCBA:</p>
+                <p>@ViewBag.PCBA</p>
+            </div>
+        </div>
+    </div>*@
 
 <style>
 
@@ -154,16 +251,16 @@
 
     @*<pre>
 
-       @foreach (var hora in resultados.Keys)
-        {
-            <text>@hora:</text>
-            foreach (var paso in resultados[hora])
+           @foreach (var hora in resultados.Keys)
             {
-                <text> Paso @paso.Key = @paso.Value</text><br />
+                <text>@hora:</text>
+                foreach (var paso in resultados[hora])
+                {
+                    <text> Paso @paso.Key = @paso.Value</text><br />
+                }
             }
-        }
 
-    </pre>*@
+        </pre>*@
 
     <table class="tabla-revision">
         <thead>
@@ -227,6 +324,8 @@
 
 </form>
 
+<div id="notificacion-reporte" data-folio="@ViewBag.id" data-linea="@ViewBag.lines" data-status="@ViewBag.Finish"></div>
+
 <!-- Sección de Operador FCT -->
 <div style="margin-top:20px; padding:10px; border:1px solid #000; border-radius:8px; background-color:#f9f9f9;">
     <p style="font-weight:bold;">Operador FCT:</p>
@@ -234,14 +333,7 @@
 </div>
 
 <script>
-    function updateClock() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
-    }
-
+    // Bloques horarios definidos
     const bloques = [
         { id: "6_30AM", hour: 6, minute: 30 },
         { id: "7_30AM", hour: 7, minute: 30 },
@@ -261,7 +353,7 @@
         { id: "9_30PM", hour: 21, minute: 30 },
         { id: "10_30PM", hour: 22, minute: 30 },
         { id: "11_30PM", hour: 23, minute: 30 },
-        { id: "12_30AM", hour: 24, minute: 30 },
+        { id: "12_30AM", hour: 0, minute: 30 },
         { id: "1_30AM", hour: 1, minute: 30 },
         { id: "2_30AM", hour: 2, minute: 30 },
         { id: "3_30AM", hour: 3, minute: 30 },
@@ -269,89 +361,251 @@
         { id: "5_30AM", hour: 5, minute: 30 }
     ];
 
+    let ultimoPasoActivo = null;
+    let finalizado = false;
+
+    // Función para mostrar el panel de revisión solo si no fue revisado
+    function mostrarPanelRevision(bloqueId) {
+        const panel = document.getElementById('panelRevision');
+        const label = document.getElementById('labelBloque');
+        if (!panel || !label) return;
+
+        const paso = calcularPasoActual();
+        if (paso === "0") return; // Paso inválido, no mostrar
+
+        const nombreCampo = `Checkbox${bloqueId}_${paso === "1" ? 'Modelo' : paso === "2" ? 'PCBA' : 'Operador'}`;
+        const radios = document.querySelectorAll(`input[name="${nombreCampo}"]`);
+        const revisado = Array.from(radios).some(r => r.checked);
+
+        if (revisado) {
+            console.log(`Ya se revisó el paso ${paso} para el bloque ${bloqueId}`);
+            return; // Ya revisado, no mostrar panel
+        }
+
+        label.innerText = `Bloque actual: ${bloqueId.replace(/_/g, ' ')}`;
+        panel.setAttribute('data-bloque', bloqueId);
+        panel.setAttribute('data-numero', paso);
+        document.getElementById('numeroRevisionText').innerText = paso;
+        panel.style.display = 'block';
+    }
+
+    // Calcula paso actual según minuto actual
+    function calcularPasoActual() {
+        const minutos = new Date().getMinutes();
+        // Definir rangos claros para cada paso: 30-49 = 1, 50-59+0-9 = 2, 10-29 = 3
+        if (minutos >= 30 && minutos <= 49) return "1";
+        if ((minutos >= 50 && minutos <= 59) || (minutos >= 0 && minutos <= 9)) return "2";
+        if (minutos >= 10 && minutos <= 29) return "3";
+        return "0"; // Fuera de rango esperado
+    }
+
+    // Oculta panel y limpia selección
+    function ocultarPanelRevision() {
+        const panel = document.getElementById('panelRevision');
+        if (!panel) return;
+        panel.style.display = 'none';
+        document.querySelectorAll('input[name="panelSelect"]').forEach(r => r.checked = false);
+    }
+
+    // Actualiza reloj visible y verifica si bloque finalizó para bloquear inputs
+    function updateClock() {
+        const now = new Date();
+        // Formato HH:MM:SS
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const timeString = `${hours}:${minutes}:${seconds}`;
+
+        document.getElementById('clock').textContent = timeString;
+    }
+
+    // Deshabilita radios y marca estado COMPLETE cuando corresponde
+    function verificarFinalizacion() {
+        if (finalizado) return;
+
+        const finishStr = document.getElementById("FinishTime")?.value;
+        const statusText = document.getElementById("status");
+        const statusHidden = document.getElementById("CurrentStatus");
+
+        if (!finishStr || !statusText || !statusHidden) return;
+
+        const finishDate = new Date(finishStr.replace(" ", "T"));
+        const now = new Date();
+        const estadoActual = statusHidden.value.trim().toUpperCase();
+
+        const esMismoDia = (
+            finishDate.getFullYear() === now.getFullYear() &&
+            finishDate.getMonth() === now.getMonth() &&
+            finishDate.getDate() === now.getDate()
+        );
+
+        if ((esMismoDia && now >= finishDate) || estadoActual === "COMPLETE") {
+            if (estadoActual !== "COMPLETE") {
+                statusText.textContent = "COMPLETE";
+                statusHidden.value = "COMPLETE";
+            }
+            finalizado = true;
+
+            const table = document.querySelector(".tabla-revision");
+            if (table) {
+                const inputs = table.querySelectorAll("input[type='radio']");
+                inputs.forEach(input => input.disabled = true);
+                table.style.opacity = "0.6";
+                table.style.pointerEvents = "none";
+            }
+        }
+    }
+
+    // Controla la activación de radios según bloque y paso actual
     function controlarRadios() {
+        console.log("Ejecutando controlarRadios...");
+
+        if (typeof finalizado !== 'undefined' && finalizado) return;
+
         const now = new Date();
         const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
 
         let bloqueActual = null;
 
+        // Buscar bloque actual basado en tiempo
         for (let i = 0; i < bloques.length - 1; i++) {
             const start = bloques[i].hour * 60 + bloques[i].minute;
             const end = bloques[i + 1].hour * 60 + bloques[i + 1].minute;
-
             if (currentTotalMinutes >= start && currentTotalMinutes < end) {
                 bloqueActual = bloques[i];
                 break;
             }
         }
-
-        // Si estamos en el último bloque (después de 6:30 PM)
+        // Si es después del último bloque, asignar último bloque
         if (!bloqueActual && currentTotalMinutes >= (bloques[bloques.length - 1].hour * 60 + bloques[bloques.length - 1].minute)) {
             bloqueActual = bloques[bloques.length - 1];
         }
 
-        // Deshabilitar todos los radios
-        document.querySelectorAll("input[type=radio].check").forEach(radio => radio.disabled = true);
+        // Desactivar todos radios con clase check
+        document.querySelectorAll("input[type=radio].check").forEach(r => r.disabled = true);
 
-        if (bloqueActual) {
-            const minutosDentroDelBloque = currentTotalMinutes - (bloqueActual.hour * 60 + bloqueActual.minute);
-            let col = 1;
-            if (minutosDentroDelBloque >= 20 && minutosDentroDelBloque < 40) {
-                col = 2;
-            } else if (minutosDentroDelBloque >= 40) {
-                col = 3;
+        if (!bloqueActual) return;
+
+        const bloqueStart = bloqueActual.hour * 60 + bloqueActual.minute;
+        const minutosDentro = currentTotalMinutes - bloqueStart;
+
+        // Determinar paso/columna
+        let col = 1;
+        if (minutosDentro >= 20 && minutosDentro < 40) col = 2;
+        else if (minutosDentro >= 40) col = 3;
+
+        // Activar radios correspondientes
+        const clase = `.check-${bloqueActual.id}-${col}`;
+        const radios = document.querySelectorAll(clase);
+        radios.forEach(radio => radio.disabled = false);
+
+        // Mostrar mensaje y panel solo si cambió el paso o bloque y no están chequeados los radios activados
+        const nuevoPaso = `${bloqueActual.id}-${col}`;
+        if (ultimoPasoActivo !== nuevoPaso) {
+            ultimoPasoActivo = nuevoPaso;
+            const yaChecado = Array.from(radios).some(radio => radio.checked);
+            if (!yaChecado) {
+                alert(`✅ Finalizó el paso anterior. Inicia paso ${col} del bloque: ${bloqueActual.id.replace(/_/g, ' ')}`);
+                mostrarPanelRevision(bloqueActual.id);
+
+                // Recarga la página después de 5 segundos para refrescar estado
+                setTimeout(() => location.reload(), 30000);
             }
-
-            const clase = `.check-${bloqueActual.id}-${col}`;
-            document.querySelectorAll(clase).forEach(radio => radio.disabled = false);
         }
     }
 
-    setInterval(() => {
-        updateClock();
-        controlarRadios();
-    }, 1000);
-
-    updateClock();
-    controlarRadios();
-</script>
-
-<script>
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-            const valor = this.value;
-
-            const fila = this.closest('tr');
-            const horaTexto = fila.getAttribute('data-time-label');
-
-            const clase = Array.from(this.classList).find(c => c.startsWith('check-'));
-            const partes = clase.split('-'); // ["check", "0630", "1"]
-            const numero = partes[2]; // número de columna
-
-            document.getElementById('selectValue').value = valor;
-            document.getElementById('horaSeleccionada').value = horaTexto;
-            document.getElementById('numeroSeleccionado').value = numero;
-
-            document.getElementById('formRevision').submit();
-            alert("Etapa marcada correctamente ! ");
-        });
-    });
-</script>
-
-<script>
+    // Configuración al cargar la página
     document.addEventListener("DOMContentLoaded", function () {
-        const status = document.getElementById("Status").value;
+        // Solicitar permiso para notificaciones si es necesario
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
 
+        // Desactivar radios si status es COMPLETE
+        const status = document.getElementById("CurrentStatus")?.value;
         if (status === "COMPLETE") {
             const table = document.querySelector(".tabla-revision");
-            const inputs = table.querySelectorAll("input[type='radio']");
-            inputs.forEach(input => {
-                input.disabled = true;
-            });
-
-            // Opcional: cambiar la opacidad de la tabla para que parezca deshabilitada visualmente
-            table.style.opacity = "0.6";
-            table.style.pointerEvents = "none"; // evita interacciones visuales
+            if (table) {
+                const inputs = table.querySelectorAll("input[type='radio']");
+                inputs.forEach(input => input.disabled = true);
+                table.style.opacity = "0.6";
+                table.style.pointerEvents = "none";
+            }
         }
+
+        // Configurar evento para radios activados
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                if (!this.disabled) {
+                    const fila = this.closest('tr');
+                    const bloqueId = fila?.getAttribute("data-time-label");
+                    if (bloqueId) {
+                        mostrarPanelRevision(bloqueId); // ✅ usa el bloqueId directo
+                    }
+                }
+            });
+        });
+
+        // Actualizar reloj cada segundo
+        setInterval(updateClock, 1000);
+
+        // Mostrar el reloj inmediatamente al cargar la página
+        updateClock();
+
+        // Ejecutar inmediatamente al cargar la página
+        window.addEventListener('load', controlarRadios);
+
+        // Ejecutar la función cada 30 segundos (30000 ms)
+        setInterval(controlarRadios, 30000);
+    });
+
+     const urlGuardarRevision = '@Url.Action("GuardarRevisiones", "Home")';
+
+    // Eventos para botones del panel
+    document.getElementById("btnCancelarRevision")?.addEventListener("click", ocultarPanelRevision);
+
+    document.getElementById("btnConfirmarRevision")?.addEventListener("click", function () {
+        const seleccion = document.querySelector('input[name="panelSelect"]:checked');
+        if (!seleccion) {
+            alert("Por favor selecciona una opción.");
+            return;
+        }
+
+        const valor = seleccion.value;
+        const panel = document.getElementById("panelRevision");
+        const bloque = panel.getAttribute("data-bloque");
+        const numero = panel.getAttribute("data-numero");
+        const horaTexto = bloque.replace(/_/g, ":").replace("AM", " AM").replace("PM", " PM");
+        const Usuario = document.getElementById("Credentials");
+
+        const data = {
+            Select: valor,
+            Hora: horaTexto,
+            Numero: numero,
+            folio: document.querySelector('[name="folio"]').value,
+            OperadorFCT: document.querySelector('[name="OperadorFCT"]').value,
+            Usuario: Usuario.value
+        };
+
+        fetch(urlGuardarRevision, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    alert("Revisión guardada.");
+                    ocultarPanelRevision();
+                }
+            })
+            .catch(err => {
+                alert("Error al guardar la revisión.");
+                console.error(err);
+            });
     });
 </script>
+
+
+

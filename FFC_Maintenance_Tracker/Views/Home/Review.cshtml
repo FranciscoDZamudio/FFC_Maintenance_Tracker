@@ -39,9 +39,13 @@
 
 <link href="~/Stylees/PageCommonStylee.css" rel="stylesheet" />
 
-<input type="text" id="modeloInterno" placeholder="Modelo Interno" class="form-control" value="@ViewBag.internalmodel" readonly =" @true" hidden="hidden" style="display: none;"/>
-<input type="text" id="pcba" placeholder="PCBA" class="form-control" value="@ViewBag.pcba" readonly =" @true" hidden="hidden" style="display: none;"/>
-<input type="text" id="operadorFCT" placeholder="Operador FCT" class="form-control" value="@ViewBag.operadorFCT" readonly =" @true" hidden="hidden" style="display: none;"/>
+<input type="text" id="modeloInterno" placeholder="Modelo Interno" class="form-control" value="@ViewBag.internalmodel" readonly=" @true" hidden="hidden" style="display: none;" />
+<input type="text" id="pcba" placeholder="PCBA" class="form-control" value="@ViewBag.pcba" readonly=" @true" hidden="hidden" style="display: none;" />
+<input type="text" id="operadorFCT" placeholder="Operador FCT" class="form-control" value="@ViewBag.operadorFCT" readonly=" @true" hidden="hidden" style="display: none;" />
+<input type="text" id="line" value="@ViewBag.line" hidden="hidden" />
+<input type="text" id="id" value="@ViewBag.id" hidden="hidden" />
+<input type="text" id="date" value="@ViewBag.date" hidden="hidden" />
+<input type="text" id="UsuariosAsociados" value="@ViewBag.UsuariosAsociados" hidden="hidden" />
 
 <div style="text-align:center">
     <h2 class="ttle">FFC Cable Inspection and Control | Review Report</h2>
@@ -167,15 +171,22 @@
         // ✅ TÍTULO centrado (ajustado más abajo para no chocar con el logo)
         doc.setFontSize(17);
         doc.setFont('helvetica', 'bold');
-        doc.text('REVISION DE CABLES FFC', 70, 16);
+        doc.text('Control de Calidad de Cables FFC', 70, 16);
 
         // ✅ MODELO INTERNO y PCBA en línea, más abajo aún
-        doc.setFontSize(10);
-        doc.text('MODELO INTERNO:', 10, 26);
-        doc.text(document.getElementById("modeloInterno")?.value || '_________', 50, 26);
+        doc.setFontSize(8);
 
-        doc.text('PCBA:', 120, 26);
-        doc.text(document.getElementById("pcba")?.value || '_________', 135, 26);
+        // Reporte #
+        doc.text('Reporte #:', 10, 26);
+        doc.text(document.getElementById("id")?.value || '_________', 40, 26);
+
+        // Línea
+        doc.text('Línea:', 85, 26);
+        doc.text(document.getElementById("line")?.value || '_________', 105, 26);
+
+        // Fecha
+        doc.text('Fecha:', 150, 26);
+        doc.text(document.getElementById("date")?.value || '_________', 170, 26);
 
         // ✅ Construcción de tabla
         const rows = [];
@@ -224,12 +235,27 @@
         });
 
         let yFinal = doc.lastAutoTable.finalY + 10;
-        doc.text('OPERADOR FCT:', 20, yFinal);
-        doc.text(document.getElementById("operadorFCT")?.value || '____________________', 60, yFinal);
+        const maxWidth = 130; // ancho máximo para salto de línea
 
-        doc.save("Revision_FFC" + datenow + ".pdf");
+        let operadores = document.getElementById("UsuariosAsociados")?.value || '____________________';
+        let operadoresLines = doc.splitTextToSize(operadores, maxWidth);
+
+        doc.text('Operadores:', 20, yFinal);
+        doc.text(operadoresLines, 39, yFinal);  // antes 60, ahora 45 para reducir separación
+
+        let nextY = yFinal + operadoresLines.length * 6; // ajusta 6 según el interlineado
+
+        let operadorFCT = document.getElementById("operadorFCT")?.value || '____________________';
+        let operadorFCTLines = doc.splitTextToSize(operadorFCT, maxWidth);
+
+        doc.text('Report created by:', 20, nextY);
+        doc.text(operadorFCTLines, 46, nextY);  // antes 60, ahora 55 (puedes ajustar más si gustas)
+
+
+        doc.save("Revision_FFC_" + datenow.replace(/:/g, '') + ".pdf");
     });
 </script>
+
 
 
 <script>
